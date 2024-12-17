@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe - Main Menu</title>
+    <title>Single Player</title>
     <link rel="stylesheet" href="../static/main.css">
 </head>
 <body>
-<!-- Background Tic Tac Toe Animation -->
 <div class="tictactoe-container">
     <div class="tictactoe-image"></div>
     <div class="tictactoe-image"></div>
@@ -26,11 +25,14 @@
     <div class="tictactoe-image"></div>
 </div>
 
-<!-- Main Menu Container -->
 <div class="menu-container">
-    <h1>TIC TAC TOE</h1>
-    <a href="./single_player.html" class="button">Single Player</a>
-    <a href="./multiplayer.html" class="button">Multi Player</a>
+    <h1>Choose Your Level</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'game_board' %}" class="button">Noob</a>
+        <a href="{% url 'game_board' %}" class="button">Good</a>
+        <a href="{% url 'game_board' %}" class="button">Legend</a>
+    </div>
+    <a href="./main_menu.html" class="back-link">Back</a>
 </div>
 </body>
 </html>

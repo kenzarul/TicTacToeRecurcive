@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer</title>
+  <link rel="stylesheet" href="../static/main.css">
+</head>
+<body>
+<div class="tictactoe-container">
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+  <div class="tictactoe-image"></div>
+</div>
+
+<div class="menu-container">
+  <h1>Multiplayer</h1>
+  <div class="code-section">
+    <button class="button" onclick="generateCode()">Create Code</button>
+    <p id="generated-code">Your Code: <span></span></p>
+  </div>
+  <form method="POST" action="{% url 'game_board' %}">
+    {% csrf_token %}
+    <label for="code-input">Enter Code:</label>
+    <input type="text" id="code-input" name="code" required>
+    <button type="submit" class="button">Submit</button>
+  </form>
+  <a href="./main_menu.html" class="back-link">Back</a>
+</div>
+<script src="{% static 'scripts.js' %}"></script>
+</body>
+</html>

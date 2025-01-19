@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Tic Tac Toe{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static '/main.css' %}">
+</head>
+<body>
+    <div class="tictactoe-container">
+
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+
+    </div>
+
+    <div class="menu-container">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="{% static 'js/music.js' %}"></script>
+    <script src="{% static 'game/scripts.js' %}"></script>
+</body>
+</html>

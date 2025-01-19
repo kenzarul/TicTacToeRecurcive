@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block title %}Single Player{% endblock %}
+
+{% block content %}
+    <h1>Choose Your Level</h1>
+    <div class="menu-buttons">
+        <a href="{% url 'game_board' %}" class="button" onclick="playClickSound()">Noob</a>
+        <a href="{% url 'game_board' %}" class="button" onclick="playClickSound()">Good</a>
+        <a href="{% url 'game_board' %}" class="button" onclick="playClickSound()">Legend</a>
+    </div>
+    <a href="{% url 'main_menu' %}" class="back-link" onclick="navigateWithSound(event, '{% url 'main_menu' %}')">Back</a>
+{% endblock %}

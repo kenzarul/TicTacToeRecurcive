@@ -1,233 +1,208 @@
-import copy
-import sys
 import pygame
 import numpy as np
+import sys
 import time
 
-WIDTH = 600
-HEIGHT = 600
-ROWS = 3
-COLS = 3
+WIDTH, HEIGHT = 900, 900
+ROWS, COLS = 3, 3
 SQSIZE = WIDTH // COLS
-LINE_WIDTH = 15
-CIRC_WIDTH = 15
-CROSS_WIDTH = 20
-RADIUS = SQSIZE // 4
-OFFSET = 50
-BG_COLOR = (255, 255, 255)  # Fond blanc
-LINE_COLOR = (0, 0, 0)  # Noir pour les grilles
-CIRC_COLOR = (255, 0, 0)  # Rouge pour "O"
-CROSS_COLOR = (0, 0, 255)  # Bleu pour "X"
-TEXT_COLOR = (0, 0, 0)  # Texte noir
+LINE_WIDTH = 10
+SUBLINE_WIDTH = 2
+CIRC_WIDTH = 5
+CROSS_WIDTH = 5
+RADIUS = SQSIZE // 6
+OFFSET = 20
+
+BG_COLOR = (255, 255, 255)
+LINE_COLOR = (0, 0, 0)
+SUBLINE_COLOR = (150, 150, 150)
+CIRC_COLOR = (255, 0, 0)
+CROSS_COLOR = (0, 0, 255)
+HIGHLIGHT_COLOR = (200, 200, 200)
+WINNER_COLOR = (200, 200, 255)
+
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('TIC TAC TOE AI')
-screen.fill(BG_COLOR)
-pygame.font.init()
-font = pygame.font.Font(None, 74)
+pygame.display.set_caption("Tic Tac Toe Récursif")
+font = pygame.font.Font(None, 50)
 
 
-class Board:
+class SubBoard:
     def __init__(self):
-        self.squares = np.zeros((ROWS, COLS))
-        self.empty_sqrs = self.squares
-        self.marked_sqrs = 0
+        self.squares = np.zeros((ROWS, COLS), dtype=int)
+        self.winner = 0
+        self.is_full = False
 
-    def final_state(self, show=False):
-        # Vérification des victoires (horizontale, verticale, diagonales)
-        for col in range(COLS):
-            if self.squares[0][col] == self.squares[1][col] == self.squares[2][col] != 0:
-                if show:
-                    color = CIRC_COLOR if self.squares[0][col] == 2 else CROSS_COLOR
-                    iPos = (col * SQSIZE + SQSIZE // 2, 20)
-                    fPos = (col * SQSIZE + SQSIZE // 2, HEIGHT - 20)
-                    pygame.draw.line(screen, color, iPos, fPos, LINE_WIDTH)
-                return self.squares[0][col]
+    def mark_square(self, row, col, player):
+        if self.squares[row][col] == 0:
+            self.squares[row][col] = player
+            self.check_winner()
 
-        for row in range(ROWS):
-            if self.squares[row][0] == self.squares[row][1] == self.squares[row][2] != 0:
-                if show:
-                    color = CIRC_COLOR if self.squares[row][0] == 2 else CROSS_COLOR
-                    iPos = (20, row * SQSIZE + SQSIZE // 2)
-                    fPos = (WIDTH - 20, row * SQSIZE + SQSIZE // 2)
-                    pygame.draw.line(screen, color, iPos, fPos, LINE_WIDTH)
-                return self.squares[row][0]
-
+    def check_winner(self):
+        for i in range(ROWS):
+            if self.squares[i][0] == self.squares[i][1] == self.squares[i][2] != 0:
+                self.winner = self.squares[i][0]
+                return
+            if self.squares[0][i] == self.squares[1][i] == self.squares[2][i] != 0:
+                self.winner = self.squares[0][i]
+                return
         if self.squares[0][0] == self.squares[1][1] == self.squares[2][2] != 0:
-            if show:
-                color = CIRC_COLOR if self.squares[1][1] == 2 else CROSS_COLOR
-                iPos = (20, 20)
-                fPos = (WIDTH - 20, HEIGHT - 20)
-                pygame.draw.line(screen, color, iPos, fPos, CROSS_WIDTH)
-            return self.squares[1][1]
+            self.winner = self.squares[0][0]
+            return
+        if self.squares[0][2] == self.squares[1][1] == self.squares[2][0] != 0:
+            self.winner = self.squares[0][2]
+            return
+        if np.all(self.squares != 0):
+            self.is_full = True
+            self.winner = 2  # Match nul
 
-        if self.squares[2][0] == self.squares[1][1] == self.squares[0][2] != 0:
-            if show:
-                color = CIRC_COLOR if self.squares[1][1] == 2 else CROSS_COLOR
-                iPos = (20, HEIGHT - 20)
-                fPos = (WIDTH - 20, 20)
-                pygame.draw.line(screen, color, iPos, fPos, CROSS_WIDTH)
-            return self.squares[1][1]
+class MainBoard:
+    def __init__(self):
+        self.subboards = [[SubBoard() for _ in range(COLS)] for _ in range(ROWS)]
+        self.main_board = np.zeros((ROWS, COLS), dtype=int)
+        self.current_sub = None
+        self.winner = 0
 
-        return 0
+    def mark_square(self, main_row, main_col, sub_row, sub_col, player):
+        subboard = self.subboards[main_row][main_col]
+        subboard.mark_square(sub_row, sub_col, player)
 
-    def mark_sqr(self, row, col, player):
-        self.squares[row][col] = player
-        self.marked_sqrs += 1
+        if subboard.winner != 0:
+            self.main_board[main_row][main_col] = subboard.winner
 
-    def empty_sqr(self, row, col):
-        return self.squares[row][col] == 0
-
-    def get_empty_sqrs(self):
-        empty_sqrs = []
-        for row in range(ROWS):
-            for col in range(COLS):
-                if self.empty_sqr(row, col):
-                    empty_sqrs.append((row, col))
-        return empty_sqrs
-
-    def isfull(self):
-        return self.marked_sqrs == 9
-
-    def isempty(self):
-        return self.marked_sqrs == 0
-
-
-class AI:
-    def __init__(self, level=1, player=2):
-        self.level = level
-        self.player = player
-
-    def minimax(self, board, maximizing):
-        case = board.final_state()
-        if case == 1:
-            return 1, None
-        if case == 2:
-            return -1, None
-        if board.isfull():
-            return 0, None
-
-        if maximizing:
-            max_eval = -1000
-            best_move = None
-            for (row, col) in board.get_empty_sqrs():
-                temp_board = copy.deepcopy(board)
-                temp_board.mark_sqr(row, col, self.level)
-                eval = self.minimax(temp_board, False)[0]
-                if eval > max_eval:
-                    max_eval = eval
-                    best_move = (row, col)
-            return max_eval, best_move
-
+        if self.main_board[sub_row][sub_col] == 0 and not subboard.is_full:
+            self.current_sub = (sub_row, sub_col)
         else:
-            min_eval = 1000
-            best_move = None
-            for (row, col) in board.get_empty_sqrs():
-                temp_board = copy.deepcopy(board)
-                temp_board.mark_sqr(row, col, self.player)
-                eval = self.minimax(temp_board, True)[0]
-                if eval < min_eval:
-                    min_eval = eval
-                    best_move = (row, col)
-            return min_eval, best_move
+            self.current_sub = None
 
-    def eval(self, main_board):
-        _, move = self.minimax(main_board, False)
-        return move
+        self.check_winner()
 
+    def check_winner(self):
+        for i in range(ROWS):
+            if self.main_board[i][0] == self.main_board[i][1] == self.main_board[i][2] != 0:
+                self.winner = self.main_board[i][0]
+                return
+            if self.main_board[0][i] == self.main_board[1][i] == self.main_board[2][i] != 0:
+                self.winner = self.main_board[0][i]
+                return
+        if self.main_board[0][0] == self.main_board[1][1] == self.main_board[2][2] != 0:
+            self.winner = self.main_board[0][0]
+            return
+        if self.main_board[0][2] == self.main_board[1][1] == self.main_board[2][0] != 0:
+            self.winner = self.main_board[0][2]
+            return
 
 class Game:
     def __init__(self):
-        self.board = Board()
-        self.ai = AI()
+        self.board = MainBoard()
         self.player = 1
         self.running = True
-        self.show_lines()
-        self.last_time = None
+        self.last_move_time = None
 
-    def show_lines(self):
+    def make_move(self, main_row, main_col, sub_row, sub_col):
+        if self.board.current_sub is None or self.board.current_sub == (main_row, main_col):
+            subboard = self.board.subboards[main_row][main_col]
+            if subboard.squares[sub_row][sub_col] == 0:
+                self.board.mark_square(main_row, main_col, sub_row, sub_col, self.player)
+                self.player = self.player % 2 + 1
+                self.last_move_time = time.time()
+
+    def ai_move(self):
+        if self.board.current_sub:
+            main_row, main_col = self.board.current_sub
+        else:
+            available = np.argwhere(self.board.main_board == 0)
+            main_row, main_col = available[np.random.randint(len(available))]
+        subboard = self.board.subboards[main_row][main_col]
+        empty_cells = np.argwhere(subboard.squares == 0)
+        if len(empty_cells) > 0:
+            sub_row, sub_col = empty_cells[np.random.randint(len(empty_cells))]
+            self.board.mark_square(main_row, main_col, sub_row, sub_col, self.player)
+            self.player = self.player % 2 + 1
+
+    def is_over(self):
+        return self.board.winner != 0
+
+    def draw(self):
         screen.fill(BG_COLOR)
+
         for x in range(1, COLS):
             pygame.draw.line(screen, LINE_COLOR, (x * SQSIZE, 0), (x * SQSIZE, HEIGHT), LINE_WIDTH)
-        for y in range(1, ROWS):
-            pygame.draw.line(screen, LINE_COLOR, (0, y * SQSIZE), (WIDTH, y * SQSIZE), LINE_WIDTH)
+            pygame.draw.line(screen, LINE_COLOR, (0, x * SQSIZE), (WIDTH, x * SQSIZE), LINE_WIDTH)
 
-    def draw_fig(self, row, col):
-        if self.player == 1:
-            start_desc = (col * SQSIZE + OFFSET, row * SQSIZE + OFFSET)
-            end_desc = (col * SQSIZE + SQSIZE - OFFSET, row * SQSIZE + SQSIZE - OFFSET)
-            pygame.draw.line(screen, CROSS_COLOR, start_desc, end_desc, CROSS_WIDTH)
-            start_asc = (col * SQSIZE + OFFSET, row * SQSIZE + SQSIZE - OFFSET)
-            end_asc = (col * SQSIZE + SQSIZE - OFFSET, row * SQSIZE + OFFSET)
-            pygame.draw.line(screen, CROSS_COLOR, start_asc, end_asc, CROSS_WIDTH)
-        elif self.player == 2:
-            center = (col * SQSIZE + SQSIZE // 2, row * SQSIZE + SQSIZE // 2)
-            pygame.draw.circle(screen, CIRC_COLOR, center, RADIUS, CIRC_WIDTH)
+        for main_row in range(ROWS):
+            for main_col in range(COLS):
+                x_start = main_col * SQSIZE
+                y_start = main_row * SQSIZE
 
-    def make_move(self, row, col):
-        self.board.mark_sqr(row, col, self.player)
-        self.draw_fig(row, col)
-        self.next_turn()
+                if self.board.current_sub == (main_row, main_col):
+                    pygame.draw.rect(screen, HIGHLIGHT_COLOR, (x_start, y_start, SQSIZE, SQSIZE))
 
-    def next_turn(self):
-        self.player = self.player % 2 + 1
-        self.last_time = None
+                for x in range(1, COLS):
+                    pygame.draw.line(screen, SUBLINE_COLOR,
+                                     (x_start + x * SQSIZE // 3, y_start),
+                                     (x_start + x * SQSIZE // 3, y_start + SQSIZE), SUBLINE_WIDTH)
+                    pygame.draw.line(screen, SUBLINE_COLOR,
+                                     (x_start, y_start + x * SQSIZE // 3),
+                                     (x_start + SQSIZE, y_start + x * SQSIZE // 3), SUBLINE_WIDTH)
 
-    def isover(self):
-        winner = self.board.final_state(show=True)
-        if winner != 0:
-            self.display_message(f"Player {winner} wins!")
-            return True
-        elif self.board.isfull():
-            self.display_message("Draw!")
-            return True
-        return False
+                subboard = self.board.subboards[main_row][main_col]
+                for row in range(ROWS):
+                    for col in range(COLS):
+                        center_x = x_start + col * SQSIZE // 3 + SQSIZE // 6
+                        center_y = y_start + row * SQSIZE // 3 + SQSIZE // 6
+                        if subboard.squares[row][col] == 1:
+                            pygame.draw.line(screen, CROSS_COLOR,
+                                             (center_x - RADIUS, center_y - RADIUS),
+                                             (center_x + RADIUS, center_y + RADIUS), CROSS_WIDTH)
+                            pygame.draw.line(screen, CROSS_COLOR,
+                                             (center_x + RADIUS, center_y - RADIUS),
+                                             (center_x - RADIUS, center_y + RADIUS), CROSS_WIDTH)
+                        elif subboard.squares[row][col] == 2:
+                            pygame.draw.circle(screen, CIRC_COLOR, (center_x, center_y), RADIUS, CIRC_WIDTH)
 
-    def display_message(self, message):
-        text = font.render(message, True, TEXT_COLOR)
-        text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-        screen.blit(text, text_rect)
+                # Dessiner le gagnant dans la sous-grille
+                if subboard.winner == 1:
+                    pygame.draw.line(screen, CROSS_COLOR,
+                                     (x_start + OFFSET, y_start + OFFSET),
+                                     (x_start + SQSIZE - OFFSET, y_start + SQSIZE - OFFSET), CROSS_WIDTH)
+                    pygame.draw.line(screen, CROSS_COLOR,
+                                     (x_start + SQSIZE - OFFSET, y_start + OFFSET),
+                                     (x_start + OFFSET, y_start + SQSIZE - OFFSET), CROSS_WIDTH)
+                elif subboard.winner == 2:
+                    pygame.draw.circle(screen, CIRC_COLOR,
+                                       (x_start + SQSIZE // 2, y_start + SQSIZE // 2),
+                                       SQSIZE // 3, CIRC_WIDTH)
+
         pygame.display.update()
-
-    def reset(self):
-        self.__init__()
-
 
 def main():
     game = Game()
-    board = game.board
-    ai = game.ai
 
-    while True:
+    while game.running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    game.reset()
-
             if event.type == pygame.MOUSEBUTTONDOWN:
-                pos = event.pos
-                row = pos[1] // SQSIZE
-                col = pos[0] // SQSIZE
-                if board.empty_sqr(row, col) and game.running and game.player == 1:
-                    game.make_move(row, col)
-                    if game.isover():
-                        game.running = False
+                x, y = event.pos
+                main_row, main_col = y // SQSIZE, x // SQSIZE
+                sub_row = (y % SQSIZE) // (SQSIZE // 3)
+                sub_col = (x % SQSIZE) // (SQSIZE // 3)
+                game.make_move(main_row, main_col, sub_row, sub_col)
 
-        if game.player == ai.player and game.running:
-            if game.last_time is None:
-                game.last_time = time.time()
-            elif time.time() - game.last_time >= 1:
-                row, col = ai.eval(board)
-                game.make_move(row, col)
-                if game.isover():
-                    game.running = False
+        if game.player == 2 and game.running:
+            if game.last_move_time and time.time() - game.last_move_time > 1:
+                game.ai_move()
+
+        game.draw()
+
+        if game.is_over():
+            print(f"Player {game.board.winner} wins!")
+            game.running = False
 
         pygame.display.update()
-
 
 main()

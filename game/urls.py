@@ -6,4 +6,6 @@ urlpatterns = [
     path('single-player/', views.single_player, name='single_player'),
     path('multiplayer/', views.multiplayer, name='multiplayer'),
     path('game-board/', views.game_board, name='game_board'),
+    path('game_board/', views.game_board, name='game_board'),
+    path('api/move/', views.make_move, name='make_move'),
 ]

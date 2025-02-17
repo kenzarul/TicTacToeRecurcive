@@ -1,0 +1,104 @@
+.ultimate-board {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.outer-row {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.sub-board {
+    background: #f5f5f5;
+    border: 2px solid #ccc;
+    padding: 10px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sub-board.active {
+    background: #e6f3ff;
+    border-color: #3498db;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+}
+
+.inner-row {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.inner-row:last-child {
+    margin-bottom: 0;
+}
+
+.square {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 1px solid #ddd;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.square:hover:not(.played) {
+    background: #f0f0f0;
+}
+
+.square.played {
+    cursor: not-allowed;
+}
+
+.sub-board.won-by-X {
+    background: rgba(231, 76, 60, 0.1);
+    border-color: #e74c3c;
+}
+
+.sub-board.won-by-O {
+    background: rgba(46, 204, 113, 0.1);
+    border-color: #2ecc71;
+}
+
+.sub-board.won-by-X::after,
+.sub-board.won-by-O::after {
+    content: attr(data-winner);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4em;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .ultimate-board {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .outer-row {
+        gap: 10px;
+    }
+
+    .sub-board {
+        padding: 5px;
+    }
+
+    .square {
+        width: 30px;
+        height: 30px;
+        font-size: 1em;
+    }
+}

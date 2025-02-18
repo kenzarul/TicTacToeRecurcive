@@ -11,7 +11,7 @@
         {% endif %}>{{ next_player }}</button>
     </form>
 {% else %}
-    <div class="square">
+    <div class="square {% if play == 'X' %}player-X{% elif play == 'O' %}player-O{% endif %}">
         {{ play }}
     </div>
 {% endif %}

@@ -7,31 +7,7 @@ from django.db import models
 
 
 class Game(models.Model):
-    """
-    This defines the board state (and metadata) for a tic-tac-toe game.
 
-    The board is modeled a 9 character string:
-        'X' or 'O' means the space is played.
-        ' ' (space) means the space is empty.
-
-    We also keep track of the time the game was created and last updated,
-    just in case we want to add "recent games" or a game list of some form.
-
-    In addition, it includes the player types. Since this is somewhat
-    insulated from the view layer of the application, we should be
-    generic about the player types and not make assumptions about
-    what the UI can support -- for instance, we should be able
-    to support two human players, or potentially two computer players
-    (although the latter would be quite dull).
-
-    We also need to support different computer player types. Each
-    player field (player_x or player_o) is a string that specifies
-    either "human" or a player object type.
-
-    Note right now we aren't robust against degenerate cases --
-    we don't prevent you from saving board states that are impossible
-    given the game rules.
-    """
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
@@ -51,11 +27,7 @@ class Game(models.Model):
 
     @property
     def next_player(self):
-        """
-        Returns 'X' if the next play is player X, otherwise 'O'.
-        This is easy to calculate based on how many plays have taken place:
-        if X has played more than O, it's O's turn; otherwise, X plays.
-        """
+
         # Counter is a useful class that counts objects.
         boards = ''.join(self.sub_games.values_list('board', flat=True))
         count = Counter(boards)
@@ -76,16 +48,7 @@ class Game(models.Model):
 
     @property
     def is_game_over(self):
-        """
-        If the game is over and there is a winner, returns 'X' or 'O'.
-        If the game is a stalemate, it returns ' ' (space)
-        If the game isn't over, it returns None.
 
-        The test is to simple check for each combination of winnable
-        states --- across, down, and diagonals.
-        If none of the winning states is reached and there are
-        no empty squares, the game is declared a stalemate.
-        """
         board = list(self.board)
         for wins in self.WINNING:
             # Create a tuple
@@ -104,12 +67,7 @@ class Game(models.Model):
         return ' '  # Stalemate
 
     def play(self, main_index, sub_index):
-        """
-        Plays a square specified by ``main_index`` (the current subgrid) and ``sub_index`` (the position in that subgrid).
-        The player to play is implied by the board state.
 
-        If the play is invalid, it raises a ValueError.
-        """
         if self.active_index and main_index != self.active_index:
             raise ValidationError("This is not the active board")
 
@@ -160,8 +118,7 @@ class Game(models.Model):
             self.active_index = index
 
     def play_auto(self):
-        """Plays for any artificial/computers players.
-        Returns when the computer players have played or the game is over."""
+
         from .players import get_player
 
         if not self.is_game_over:
@@ -182,31 +139,7 @@ class Game(models.Model):
 
 
 class SubGame(models.Model):
-    """
-    This defines the sub-board state (and metadata) for a tic-tac-toe game.
 
-    The board is modeled a 9 character string:
-        'X' or 'O' means the space is played.
-        ' ' (space) means the space is empty.
-
-    We also keep track of the time the game was created and last updated,
-    just in case we want to add "recent games" or a game list of some form.
-
-    In addition, it includes the player types. Since this is somewhat
-    insulated from the view layer of the application, we should be
-    generic about the player types and not make assumptions about
-    what the UI can support -- for instance, we should be able
-    to support two human players, or potentially two computer players
-    (although the latter would be quite dull).
-
-    We also need to support different computer player types. Each
-    player field (player_x or player_o) is a string that specifies
-    either "human" or a player object type.
-
-    Note right now we aren't robust against degenerate cases --
-    we don't prevent you from saving board states that are impossible
-    given the game rules.
-    """
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='sub_games')
@@ -229,11 +162,7 @@ class SubGame(models.Model):
 
     @property
     def next_player(self):
-        """
-        Returns 'X' if the next play is player X, otherwise 'O'.
-        This is easy to calculate based on how many plays have taken place:
-        if X has played more than O, it's O's turn; otherwise, X plays.
-        """
+
         # Counter is a useful class that counts objects.
         boards = ''.join(self.game.sub_games.values_list('board', flat=True))
         count = Counter(boards)
@@ -254,11 +183,7 @@ class SubGame(models.Model):
 
     @property
     def is_game_over(self):
-        """
-        If the subgame is over and there is a winner, returns 'X' or 'O'.
-        If the game is a stalemate, it returns ' ' (space)
-        If the game isn't over, it returns None.
-        """
+
         board = list(self.board)
         for wins in self.WINNING:
             # Create a tuple
@@ -277,12 +202,7 @@ class SubGame(models.Model):
         return ' '  # Stalemate or filled board
 
     def play(self, index):
-        """
-        Plays a square specified by ``index``.
-        The player to play is implied by the board state.
 
-        If the play is invalid, it raises a ValueError.
-        """
         if index < 0 or index >= 9:
             raise IndexError("Invalid board index")
 
@@ -297,8 +217,7 @@ class SubGame(models.Model):
         return self.is_game_over
 
     def play_auto(self):
-        """Plays for any artificial/computers players.
-        Returns when the computer players have played or the game is over."""
+
         from .players import get_player
 
         if not self.is_game_over:

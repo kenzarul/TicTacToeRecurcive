@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block body %}
+    <h1>Choose Your Level</h1>
+    <div class="menu-buttons">
+
+        <form method="POST" >
+            {% csrf_token %}
+            <input name="player1" type="hidden" value="human"/>
+            <input name="player2" type="hidden" value="game.players.RandomPlayer"/>
+            <button type="submit" class="button" onclick="playClickSound()">Noob</button>
+        </form>
+
+        <form method="POST" >
+            {% csrf_token %}
+            <input name="player1" type="hidden" value="human"/>
+            <input name="player2" type="hidden" value="game.players.RandomPlayer"/>
+            <button type="submit" class="button" onclick="playClickSound()">Good</button>
+        </form>
+
+        <form method="POST" >
+            {% csrf_token %}
+            <input name="player1" type="hidden" value="human"/>
+            <input name="player2" type="hidden" value="game.players.RandomPlayer"/>
+            <button type="submit" class="button" onclick="playClickSound()">Legend</button>
+        </form>
+    </div>
+
+   <a href="{% url 'game:main_menu' %}" class="back-link" onclick="navigateWithSound(event, '{% url 'game:main_menu' %}')">Back</a>
+{% endblock %}

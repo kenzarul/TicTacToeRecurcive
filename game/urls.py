@@ -1,11 +1,12 @@
-from django.urls import path
+from django.urls import re_path
 from . import views
 
+app_name = "game"
+
 urlpatterns = [
-    path('', views.main_menu, name='main_menu'),
-    path('single-player/', views.single_player, name='single_player'),
-    path('multiplayer/', views.multiplayer, name='multiplayer'),
-    path('game-board/', views.game_board, name='game_board'),
-    path('game_board/', views.game_board, name='game_board'),
-    path('api/move/', views.make_move, name='make_move'),
+    re_path(r'^$', views.main_menu, name='main_menu'),
+    re_path(r'^single/$', views.single_player, name='single_player'),
+    re_path(r'^multi/$', views.multiplayer, name='multiplayer'),
+    re_path(r'^index/$', views.index, name='index'),
+    re_path(r'^(?P<pk>\d+)/$', views.game, name='detail'),
 ]

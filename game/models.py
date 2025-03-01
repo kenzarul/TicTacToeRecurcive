@@ -117,6 +117,8 @@ class Game(models.Model):
         else:
             self.active_index = index
 
+  
+
     def play_auto(self):
 
         from .players import get_player
@@ -229,3 +231,8 @@ class SubGame(models.Model):
 
             player_obj = get_player(player)
             self.play(player_obj.play(self))
+
+
+
+
+

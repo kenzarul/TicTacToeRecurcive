@@ -75,7 +75,7 @@ class Game(models.Model):
             raise IndexError("Invalid board index")
 
         if self.board[main_index] != ' ':
-            raise ValueError("Board already won")
+            return
 
         sub_game = self.sub_games.filter(index=int(main_index)).first()
 

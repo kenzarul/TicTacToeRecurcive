@@ -142,7 +142,6 @@ class Game(models.Model):
             self.play(main_index, player_obj.play(sub_game))
 
 
-
 class SubGame(models.Model):
     last_move_index = models.PositiveIntegerField(null=True, blank=True)
     last_computer_move = models.PositiveIntegerField(null=True, blank=True)

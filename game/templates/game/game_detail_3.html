@@ -26,59 +26,77 @@
             <div class="big-row">
                 <!-- Board 0 -->
 
-                <div class="board {% if active_index == 0 %}active{% endif %} {% if sub_game_0.winner %}won-{{ sub_game_0.winner }}{% endif %}">
+                <div class="board {% if active_index == 0 %}active{% endif %} {% if sub_game_0.winner %}won-{{ sub_game_0.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=0 index=0 play=sub_game_0.board.0 %}
-                        {% include "includes/square.html" with game=game board=0 index=1 play=sub_game_0.board.1 %}
-                        {% include "includes/square.html" with game=game board=0 index=2 play=sub_game_0.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=0 index=0 play=sub_game_0.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=1 play=sub_game_0.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=2 play=sub_game_0.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=0 index=3 play=sub_game_0.board.3 %}
-                        {% include "includes/square.html" with game=game board=0 index=4 play=sub_game_0.board.4 %}
-                        {% include "includes/square.html" with game=game board=0 index=5 play=sub_game_0.board.5 %}
+                         <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=0 index=3 play=sub_game_0.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=4 play=sub_game_0.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=5 play=sub_game_0.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=0 index=6 play=sub_game_0.board.6 %}
-                        {% include "includes/square.html" with game=game board=0 index=7 play=sub_game_0.board.7 %}
-                        {% include "includes/square.html" with game=game board=0 index=8 play=sub_game_0.board.8 %}
+                         <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=0 index=6 play=sub_game_0.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=7 play=sub_game_0.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=0 index=8 play=sub_game_0.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
-                <div class="board {% if active_index == 1 %}active{% endif %} {% if sub_game_1.winner %}won-{{ sub_game_1.winner }}{% endif %}">
+                <div class="board {% if active_index == 1 %}active{% endif %} {% if sub_game_1.winner %}won-{{ sub_game_1.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=1 index=0 play=sub_game_1.board.0 %}
-                        {% include "includes/square.html" with game=game board=1 index=1 play=sub_game_1.board.1 %}
-                        {% include "includes/square.html" with game=game board=1 index=2 play=sub_game_1.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=1 index=0 play=sub_game_1.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=1 play=sub_game_1.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=2 play=sub_game_1.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=1 index=3 play=sub_game_1.board.3 %}
-                        {% include "includes/square.html" with game=game board=1 index=4 play=sub_game_1.board.4 %}
-                        {% include "includes/square.html" with game=game board=1 index=5 play=sub_game_1.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=1 index=3 play=sub_game_1.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=4 play=sub_game_1.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=5 play=sub_game_1.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=1 index=6 play=sub_game_1.board.6 %}
-                        {% include "includes/square.html" with game=game board=1 index=7 play=sub_game_1.board.7 %}
-                        {% include "includes/square.html" with game=game board=1 index=8 play=sub_game_1.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=1 index=6 play=sub_game_1.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=7 play=sub_game_1.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=1 index=8 play=sub_game_1.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
 
                 <!-- Board 2 -->
-                <div class="board {% if active_index == 2 %}active{% endif %} {% if sub_game_2.winner %}won-{{ sub_game_2.winner }}{% endif %}">
+                <div class="board {% if active_index == 2 %}active{% endif %} {% if sub_game_2.winner %}won-{{ sub_game_2.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=2 index=0 play=sub_game_2.board.0 %}
-                        {% include "includes/square.html" with game=game board=2 index=1 play=sub_game_2.board.1 %}
-                        {% include "includes/square.html" with game=game board=2 index=2 play=sub_game_2.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=2 index=0 play=sub_game_2.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=1 play=sub_game_2.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=2 play=sub_game_2.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=2 index=3 play=sub_game_2.board.3 %}
-                        {% include "includes/square.html" with game=game board=2 index=4 play=sub_game_2.board.4 %}
-                        {% include "includes/square.html" with game=game board=2 index=5 play=sub_game_2.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=2 index=3 play=sub_game_2.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=4 play=sub_game_2.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=5 play=sub_game_2.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=2 index=6 play=sub_game_2.board.6 %}
-                        {% include "includes/square.html" with game=game board=2 index=7 play=sub_game_2.board.7 %}
-                        {% include "includes/square.html" with game=game board=2 index=8 play=sub_game_2.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=2 index=6 play=sub_game_2.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=7 play=sub_game_2.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=2 index=8 play=sub_game_2.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -86,59 +104,77 @@
             <!-- Middle row of big boards -->
             <div class="big-row">
                 <!-- Board 3 -->
-                <div class="board {% if active_index == 3 %}active{% endif %} {% if sub_game_3.winner %}won-{{ sub_game_3.winner }}{% endif %}">
+                <div class="board {% if active_index == 3 %}active{% endif %} {% if sub_game_3.winner %}won-{{ sub_game_3.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=3 index=0 play=sub_game_3.board.0 %}
-                        {% include "includes/square.html" with game=game board=3 index=1 play=sub_game_3.board.1 %}
-                        {% include "includes/square.html" with game=game board=3 index=2 play=sub_game_3.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=3 index=0 play=sub_game_3.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=1 play=sub_game_3.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=2 play=sub_game_3.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=3 index=3 play=sub_game_3.board.3 %}
-                        {% include "includes/square.html" with game=game board=3 index=4 play=sub_game_3.board.4 %}
-                        {% include "includes/square.html" with game=game board=3 index=5 play=sub_game_3.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=3 index=3 play=sub_game_3.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=4 play=sub_game_3.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=5 play=sub_game_3.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=3 index=6 play=sub_game_3.board.6 %}
-                        {% include "includes/square.html" with game=game board=3 index=7 play=sub_game_3.board.7 %}
-                        {% include "includes/square.html" with game=game board=3 index=8 play=sub_game_3.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=3 index=6 play=sub_game_3.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=7 play=sub_game_3.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=3 index=8 play=sub_game_3.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
                 <!-- Board 4 -->
-                <div class="board {% if active_index == 4 %}active{% endif %} {% if sub_game_4.winner %}won-{{ sub_game_4.winner }}{% endif %}">
+                <div class="board {% if active_index == 4 %}active{% endif %} {% if sub_game_4.winner %}won-{{ sub_game_4.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=4 index=0 play=sub_game_4.board.0 %}
-                        {% include "includes/square.html" with game=game board=4 index=1 play=sub_game_4.board.1 %}
-                        {% include "includes/square.html" with game=game board=4 index=2 play=sub_game_4.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=4 index=0 play=sub_game_4.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=1 play=sub_game_4.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=2 play=sub_game_4.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=4 index=3 play=sub_game_4.board.3 %}
-                        {% include "includes/square.html" with game=game board=4 index=4 play=sub_game_4.board.4 %}
-                        {% include "includes/square.html" with game=game board=4 index=5 play=sub_game_4.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=4 index=3 play=sub_game_4.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=4 play=sub_game_4.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=5 play=sub_game_4.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=4 index=6 play=sub_game_4.board.6 %}
-                        {% include "includes/square.html" with game=game board=4 index=7 play=sub_game_4.board.7 %}
-                        {% include "includes/square.html" with game=game board=4 index=8 play=sub_game_4.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=4 index=6 play=sub_game_4.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=7 play=sub_game_4.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=4 index=8 play=sub_game_4.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
                 <!-- Board 5 -->
-                <div class="board {% if active_index == 5 %}active{% endif %} {% if sub_game_5.winner %}won-{{ sub_game_5.winner }}{% endif %}">
+                <div class="board {% if active_index == 5 %}active{% endif %} {% if sub_game_5.winner %}won-{{ sub_game_5.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=5 index=0 play=sub_game_5.board.0 %}
-                        {% include "includes/square.html" with game=game board=5 index=1 play=sub_game_5.board.1 %}
-                        {% include "includes/square.html" with game=game board=5 index=2 play=sub_game_5.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=5 index=0 play=sub_game_5.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=1 play=sub_game_5.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=2 play=sub_game_5.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=5 index=3 play=sub_game_5.board.3 %}
-                        {% include "includes/square.html" with game=game board=5 index=4 play=sub_game_5.board.4 %}
-                        {% include "includes/square.html" with game=game board=5 index=5 play=sub_game_5.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=5 index=3 play=sub_game_5.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=4 play=sub_game_5.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=5 play=sub_game_5.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=5 index=6 play=sub_game_5.board.6 %}
-                        {% include "includes/square.html" with game=game board=5 index=7 play=sub_game_5.board.7 %}
-                        {% include "includes/square.html" with game=game board=5 index=8 play=sub_game_5.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=5 index=6 play=sub_game_5.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=7 play=sub_game_5.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=5 index=8 play=sub_game_5.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -146,59 +182,77 @@
             <!-- Bottom row of big boards -->
             <div class="big-row">
                 <!-- Board 6 -->
-                <div class="board {% if active_index == 6 %}active{% endif %} {% if sub_game_6.winner %}won-{{ sub_game_6.winner }}{% endif %}">
+                <div class="board {% if active_index == 6 %}active{% endif %} {% if sub_game_6.winner %}won-{{ sub_game_6.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=6 index=0 play=sub_game_6.board.0 %}
-                        {% include "includes/square.html" with game=game board=6 index=1 play=sub_game_6.board.1 %}
-                        {% include "includes/square.html" with game=game board=6 index=2 play=sub_game_6.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=6 index=0 play=sub_game_6.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=1 play=sub_game_6.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=2 play=sub_game_6.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=6 index=3 play=sub_game_6.board.3 %}
-                        {% include "includes/square.html" with game=game board=6 index=4 play=sub_game_6.board.4 %}
-                        {% include "includes/square.html" with game=game board=6 index=5 play=sub_game_6.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=6 index=3 play=sub_game_6.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=4 play=sub_game_6.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=5 play=sub_game_6.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=6 index=6 play=sub_game_6.board.6 %}
-                        {% include "includes/square.html" with game=game board=6 index=7 play=sub_game_6.board.7 %}
-                        {% include "includes/square.html" with game=game board=6 index=8 play=sub_game_6.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=6 index=6 play=sub_game_6.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=7 play=sub_game_6.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=6 index=8 play=sub_game_6.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
                 <!-- Board 7 -->
-                <div class="board {% if active_index == 7 %}active{% endif %} {% if sub_game_7.winner %}won-{{ sub_game_7.winner }}{% endif %}">
+                <div class="board {% if active_index == 7 %}active{% endif %} {% if sub_game_7.winner %}won-{{ sub_game_7.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=7 index=0 play=sub_game_7.board.0 %}
-                        {% include "includes/square.html" with game=game board=7 index=1 play=sub_game_7.board.1 %}
-                        {% include "includes/square.html" with game=game board=7 index=2 play=sub_game_7.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=7 index=0 play=sub_game_7.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=1 play=sub_game_7.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=2 play=sub_game_7.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=7 index=3 play=sub_game_7.board.3 %}
-                        {% include "includes/square.html" with game=game board=7 index=4 play=sub_game_7.board.4 %}
-                        {% include "includes/square.html" with game=game board=7 index=5 play=sub_game_7.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=7 index=3 play=sub_game_7.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=4 play=sub_game_7.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=5 play=sub_game_7.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=7 index=6 play=sub_game_7.board.6 %}
-                        {% include "includes/square.html" with game=game board=7 index=7 play=sub_game_7.board.7 %}
-                        {% include "includes/square.html" with game=game board=7 index=8 play=sub_game_7.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=7 index=6 play=sub_game_7.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=7 play=sub_game_7.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=7 index=8 play=sub_game_7.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
 
                 <!-- Board 8 -->
-                <div class="board {% if active_index == 8 %}active{% endif %} {% if sub_game_8.winner %}won-{{ sub_game_8.winner }}{% endif %}">
+                <div class="board {% if active_index == 8 %}active{% endif %} {% if sub_game_8.winner %}won-{{ sub_game_8.winner }}{% endif %} ">
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=8 index=0 play=sub_game_8.board.0 %}
-                        {% include "includes/square.html" with game=game board=8 index=1 play=sub_game_8.board.1 %}
-                        {% include "includes/square.html" with game=game board=8 index=2 play=sub_game_8.board.2 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=8 index=0 play=sub_game_8.board.0 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=1 play=sub_game_8.board.1 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=2 play=sub_game_8.board.2 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=8 index=3 play=sub_game_8.board.3 %}
-                        {% include "includes/square.html" with game=game board=8 index=4 play=sub_game_8.board.4 %}
-                        {% include "includes/square.html" with game=game board=8 index=5 play=sub_game_8.board.5 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=8 index=3 play=sub_game_8.board.3 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=4 play=sub_game_8.board.4 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=5 play=sub_game_8.board.5 last_move_index=last_move_index %}
+                        </div>
                     </div>
                     <div class="row">
-                        {% include "includes/square.html" with game=game board=8 index=6 play=sub_game_8.board.6 %}
-                        {% include "includes/square.html" with game=game board=8 index=7 play=sub_game_8.board.7 %}
-                        {% include "includes/square.html" with game=game board=8 index=8 play=sub_game_8.board.8 %}
+                        <div class="board-square {% if i == last_move_index %}rainbow-color{% endif %}">
+                        {% include "includes/square.html" with game=game board=8 index=6 play=sub_game_8.board.6 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=7 play=sub_game_8.board.7 last_move_index=last_move_index %}
+                        {% include "includes/square.html" with game=game board=8 index=8 play=sub_game_8.board.8 last_move_index=last_move_index %}
+                        </div>
                     </div>
                 </div>
             </div>

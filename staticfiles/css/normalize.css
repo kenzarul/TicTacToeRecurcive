@@ -62,7 +62,6 @@ html, body {
 .menu-container,
 .game-container {
     width: 100%;
-    max-height: 10%;
     background-color: #fff;
     padding: 50px 30px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
@@ -80,6 +79,20 @@ h1 {
     margin-bottom: 20px;
     text-align: center;
 }
+
+h2 {
+    font-size: 2rem;
+    color: #333;
+    text-align: center;
+}
+
+h3 {
+    font-size: 1.5rem;
+    color: #333;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
 
 a {
     text-decoration: none;
@@ -117,6 +130,29 @@ a {
 .button:hover {
     background-color: #0056b3;
 }
+
+@keyframes rainbow {
+    0% { color: red; }
+    20% { color: orange; }
+    40% { color: yellow; }
+    60% { color: green; }
+    80% { color: blue; }
+    100% { color: purple; }
+}
+
+.last-move {
+    animation: rainbow 9s ease-in-out infinite;
+}
+
+.square.last-played {
+    animation: rainbow 9s infinite;
+}
+
+.rainbow-color {
+    background: linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet);
+    animation: rainbow 2s infinite;
+}
+
 
 label {
     display: block;
@@ -180,6 +216,12 @@ input:focus {
 
     h1 {
         font-size: 2rem;
+    }
+    h2 {
+    font-size: 1.5rem;
+    }
+    h3 {
+    font-size: 1rem;
     }
     #game-board {
     display: grid;

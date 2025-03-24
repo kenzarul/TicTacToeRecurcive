@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
 
+from game.players import get_player
+
 
 class Game(models.Model):
 
@@ -141,14 +143,13 @@ class Game(models.Model):
 
 
 class SubGame(models.Model):
-
+    last_move_index = models.PositiveIntegerField(null=True, blank=True)
+    last_computer_move = models.PositiveIntegerField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='sub_games')
     index = models.PositiveIntegerField()
-
     board = models.CharField(max_length=9, default=" " * 9)
-
     player_x = models.CharField(max_length=64)
     player_o = models.CharField(max_length=64)
     winner = models.CharField(max_length=64, blank=True, null=True)
@@ -204,33 +205,43 @@ class SubGame(models.Model):
         return ' '  # Stalemate or filled board
 
     def play(self, index):
-
         if index < 0 or index >= 9:
             raise IndexError("Invalid board index")
-
         if self.board[index] != ' ':
             raise ValueError("Square already played")
 
-        # One downside of storing the board state as a string
-        # is that you can't mutate it in place.
+        # Update board and last move
         board = list(self.board)
         board[index] = self.next_player
-        self.board = u''.join(board)
+        self.board = ''.join(board)
+
+        self.last_move_index = index  # Store last move
+        self.save()
+
         return self.is_game_over
 
     def play_auto(self):
-
-        from .players import get_player
-
         if not self.is_game_over:
             next = self.next_player
-            print(next)
             player = self.player_x if next == 'X' else self.player_o
             if player == 'human':
                 return
 
+            if self.active_index is None:
+                open_indexes = [i for i, v in enumerate(self.board) if v == ' ']
+                main_index = random.choice(open_indexes)
+            else:
+                main_index = self.active_index
+
             player_obj = get_player(player)
-            self.play(player_obj.play(self))
+            sub_game = self.sub_games.filter(index=main_index).first()
+            self.play(main_index, player_obj.play(sub_game))
+
+            # Store the last move index
+            self.last_move_index = main_index
+            self.save()
+
+
 
 
 

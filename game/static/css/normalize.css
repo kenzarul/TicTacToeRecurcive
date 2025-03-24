@@ -131,6 +131,28 @@ a {
     background-color: #0056b3;
 }
 
+@keyframes rainbow {
+    0% { color: red; }
+    20% { color: orange; }
+    40% { color: yellow; }
+    60% { color: green; }
+    80% { color: blue; }
+    100% { color: purple; }
+}
+
+.last-move {
+    animation: rainbow 9s ease-in-out infinite;
+}
+
+.square.last-played {
+    animation: rainbow 9s infinite;
+}
+
+.rainbow-color {
+    animation: rainbow 2s infinite;
+}
+
+
 label {
     display: block;
     margin: 15px 0 5px;

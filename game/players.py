@@ -130,3 +130,4 @@ def get_player(player_name):
     elif player_name == 'game.players.RandomPlayer':
         return RandomPlayer()
     raise ValueError(f"Unknown player: {player_name}")
+

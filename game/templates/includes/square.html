@@ -1,17 +1,17 @@
 {% if play == ' ' %}
-    {# This square is open to be played #}
-    <form method="POST" class="square">
-        {% csrf_token %}
-        <input name="main_index" value="{{ board }}" type="hidden">
-        <input name="sub_index" value="{{ index }}" type="hidden" >
-        <button type="submit" {% if game.active_index and game.active_index != board %}
-                disabled
-                {% elif game.winner %}
-                disabled
-        {% endif %}>{{ next_player }}</button>
-    </form>
+  <form method="POST" class="square">
+      {% csrf_token %}
+      <input name="main_index" value="{{ board }}" type="hidden">
+      <input name="sub_index" value="{{ index }}" type="hidden">
+      <button type="submit" {% if game.active_index and game.active_index != board %}
+              disabled
+              {% elif game.winner %}
+              disabled
+      {% endif %}>{{ next_player }}</button>
+  </form>
 {% else %}
-    <div class="square {% if play == 'X' %}player-X{% elif play == 'O' %}player-O{% endif %}">
-        {{ play }}
-    </div>
+  <div class="square {% if play == 'X' %}player-X{% elif play == 'O' %}player-O{% endif %}
+              {% if index == last_move_index %}rainbow-color{% endif %}">
+      {{ play }}
+  </div>
 {% endif %}

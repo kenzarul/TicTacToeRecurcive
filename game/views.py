@@ -35,23 +35,17 @@ def index(request):
 def game(request, pk):
     game = get_object_or_404(Game, pk=pk)
     if request.method == "POST":
-        # Check for index.
         form = PlayForm(request.POST)
         if form.is_valid():
-            print("Playing")
-            print(form.cleaned_data)
             game.play(form.cleaned_data['main_index'],
                       form.cleaned_data['sub_index'])
             game.play_auto()
             game.save()
-            # Redirect to the same URL so we don't get resubmission warnings.
-            # This is a relatively dumb UI; what you would really
-            # want to do is have a front-end UI that does requests via
-            # AJAX (jQuery or Ember)
             return redirect('game:detail', pk=pk)
-        else:
-            # What to do? This is a programmer error for now.
-            pass
+
+    # Get the last move index from the subgame that was last updated
+    last_sub_game = game.sub_games.order_by('-date_updated').first()
+    last_move_index = last_sub_game.last_move_index if last_sub_game else None
 
     context = {
         'game': game,
@@ -65,5 +59,7 @@ def game(request, pk):
         'sub_game_6': game.sub_games.filter(index=6).first(),
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
+        'last_move_index': last_move_index,
+        'next_player': game.next_player
     }
-    return render(request, "game/game_detail_3.html",  context)
+    return render(request, "game/game_detail_3.html", context)

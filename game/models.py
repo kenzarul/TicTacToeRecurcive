@@ -9,7 +9,6 @@ from game.players import get_player
 
 
 class Game(models.Model):
-
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
@@ -19,7 +18,6 @@ class Game(models.Model):
     player_o = models.CharField(max_length=64)
     active_index = models.PositiveIntegerField(null=True, blank=True)
     winner = models.CharField(max_length=64, null=True, blank=True)
-
 
     def __unicode__(self):
         return '{0} vs {1}, state="{2}"'.format(self.player_x, self.player_o, self.board)
@@ -118,8 +116,6 @@ class Game(models.Model):
             self.active_index = None
         else:
             self.active_index = index
-
-  
 
     def play_auto(self):
 
@@ -240,10 +236,4 @@ class SubGame(models.Model):
             # Store the last move index
             self.last_move_index = main_index
             self.save()
-
-
-
-
-
-
 

@@ -17,7 +17,7 @@
         {% else %}
             <h2>{{ next_player }} to play</h2>
             {% if game.active_index != None %}
-                <h3>Playing in board {{ active_index }}</h3>
+                <h3>Playing in board {{ active_index|add:1 }}</h3>
             {% endif %}
         {% endif %}
 

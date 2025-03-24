@@ -43,13 +43,11 @@ def game(request, pk):
             game.save()
             return redirect('game:detail', pk=pk)
 
-    # Get the last move index from the subgame that was last updated
-    last_sub_game = game.sub_games.order_by('-date_updated').first()
-    last_move_index = last_sub_game.last_move_index if last_sub_game else None
-
     context = {
         'game': game,
         'active_index': game.active_index,
+        'last_main_index': game.last_main_index,
+        'last_sub_index': game.last_sub_index,
         'sub_game_0': game.sub_games.filter(index=0).first(),
         'sub_game_1': game.sub_games.filter(index=1).first(),
         'sub_game_2': game.sub_games.filter(index=2).first(),
@@ -59,7 +57,6 @@ def game(request, pk):
         'sub_game_6': game.sub_games.filter(index=6).first(),
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
-        'last_move_index': last_move_index,
         'next_player': game.next_player
     }
     return render(request, "game/game_detail_3.html", context)

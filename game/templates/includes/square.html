@@ -11,7 +11,7 @@
   </form>
 {% else %}
   <div class="square {% if play == 'X' %}player-X{% elif play == 'O' %}player-O{% endif %}
-              {% if index == last_move_index %}rainbow-color{% endif %}">
+              {% if last_main_index == current_main_index and last_sub_index == index %}rainbow-color{% endif %}">
       {{ play }}
   </div>
 {% endif %}

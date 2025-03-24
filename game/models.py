@@ -9,7 +9,8 @@ from game.players import get_player
 
 
 class Game(models.Model):
-
+    last_main_index = models.PositiveIntegerField(null=True, blank=True)  # Track main board index
+    last_sub_index = models.PositiveIntegerField(null=True, blank=True)  # Track sub board index
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
 
@@ -69,7 +70,6 @@ class Game(models.Model):
         return ' '  # Stalemate
 
     def play(self, main_index, sub_index):
-
         if self.active_index and main_index != self.active_index:
             raise ValidationError("This is not the active board")
 
@@ -86,13 +86,10 @@ class Game(models.Model):
 
         # Check if the subgrid is won or full
         if sub_game.is_game_over != None:
-            # If the subgrid is over (won or stalemate), set the next active index randomly
             available_subgrids = [i for i in range(9) if self.board[i] == ' ']
             if available_subgrids:
-                # Randomly pick an available subgrid
                 self.set_active_index(random.choice(available_subgrids))
             else:
-                # If no subgrids are available, the game is over or it's stalemate
                 self.active_index = None
             return
 
@@ -100,9 +97,12 @@ class Game(models.Model):
         winner = sub_game.play(sub_index)
         sub_game.save()
 
+        # Update last move tracking
+        self.last_main_index = main_index
+        self.last_sub_index = sub_index
+        self.save()
+
         if winner is not None:
-            # One downside of storing the board state as a string
-            # is that you can't mutate it in place.
             board = list(self.board)
             board[main_index] = winner
             self.board = u''.join(board)
@@ -119,12 +119,7 @@ class Game(models.Model):
         else:
             self.active_index = index
 
-  
-
     def play_auto(self):
-
-        from .players import get_player
-
         if not self.is_game_over:
             next = self.next_player
             player = self.player_x if next == 'X' else self.player_o
@@ -139,7 +134,8 @@ class Game(models.Model):
 
             player_obj = get_player(player)
             sub_game = self.sub_games.filter(index=main_index).first()
-            self.play(main_index, player_obj.play(sub_game))
+            sub_index = player_obj.play(sub_game)
+            self.play(main_index, sub_index)
 
 
 class SubGame(models.Model):

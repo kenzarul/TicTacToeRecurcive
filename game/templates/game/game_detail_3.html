@@ -1,25 +1,40 @@
 {% extends "base.html" %}
 
-
-
-
 {% block body %}
-    {% with next_player=game.next_player game_over=game.is_game_over %}
-        {% if game_over == 'X' %}
-            <h1>X wins!</h1>
-            <a href="{% url 'game:index' %}">Start a new game</a>
-        {% elif game_over == 'O' %}
-            <h1>O wins!</h1>
-            <a href="{% url 'game:index' %}">Start a new game</a>
-        {% elif game_over == ' ' %}
-            <h1>Stalemate</h1>
-            <a href="{% url 'game:index' %}">Start a new game</a>
-        {% else %}
-            <h2>{{ next_player }} to play</h2>
-            {% if game.active_index != None %}
-                <h3>Playing in board {{ active_index }}</h3>
-            {% endif %}
-        {% endif %}
+<!-- Game Result Modal -->
+<div id="gameResultModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="resultTitle"></h2>
+    </div>
+    <div class="modal-body">
+      <p id="resultMessage"></p>
+      <div class="confetti"></div>
+      <div class="confetti"></div>
+      <div class="confetti"></div>
+      <div class="confetti"></div>
+      <div class="confetti"></div>
+    </div>
+    <div class="modal-footer">
+      <a href="{% url 'game:index' %}" class="modal-btn new-game">New Game</a>
+      <button onclick="closeModal()" class="modal-btn exit">Exit</button>
+    </div>
+  </div>
+</div>
+
+{% with next_player=game.next_player game_over=game.is_game_over %}
+  {% if game_over == 'X' or game_over == 'O' or game_over == ' ' %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        showResultModal("{{ game_over }}");
+      });
+    </script>
+  {% else %}
+    <h2>{{ next_player }} to play</h2>
+    {% if game.active_index != None %}
+      <h3>Playing in board {{ active_index }}</h3>
+    {% endif %}
+  {% endif %}
 
         <div class="ultimate-board" style="display: flex; border: 2px solid black">
             <!-- Top row of big boards -->
@@ -258,4 +273,38 @@
             </div>
         </div>
     {% endwith %}
+
+
+<script>
+  function showResultModal(result) {
+    const modal = document.getElementById('gameResultModal');
+    const title = document.getElementById('resultTitle');
+    const message = document.getElementById('resultMessage');
+
+    if (result === 'X') {
+      title.textContent = '🎉 Bravo! 🎉';
+      message.textContent = 'Player X Wins the Game!';
+    } else if (result === 'O') {
+      title.textContent = '🎉 Bravo! 🎉';
+      message.textContent = 'Player O Wins the Game!';
+    } else {
+      title.textContent = 'Game Over';
+      message.textContent = 'The game ended in a stalemate!';
+    }
+
+    modal.style.display = 'block';
+  }
+
+  function closeModal() {
+    document.getElementById('gameResultModal').style.display = 'none';
+  }
+
+  // Close modal when clicking outside
+  window.onclick = function(event) {
+    const modal = document.getElementById('gameResultModal');
+    if (event.target == modal) {
+      closeModal();
+    }
+  }
+</script>
 {% endblock %}

@@ -1,8 +1,12 @@
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
-
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+import string
+import random
+
 
 def main_menu(request):
     return render(request, 'game/main_menu.html')
@@ -29,6 +33,26 @@ def index(request):
     else:
         form = NewGameForm()
     return render(request, 'game/single_player.html', {'form': form})
+
+def generate_room_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+def join_room(request):
+    if request.method == "POST":
+        import json
+        data = json.loads(request.body)
+        code = data.get("code")
+
+        # Check if the room exists
+        game = Game.objects.filter(id=code).first()
+        if game:
+            return JsonResponse({"success": True, "redirect_url": f"/game/{game.id}/"})  # Redirect to room
+        return JsonResponse({"success": False})
+
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
+def board_view(request):
+    return render(request, "game/board.html")  # Ensure board.html exists
 
 
 @require_http_methods(["GET", "POST"])

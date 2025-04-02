@@ -1,17 +1,20 @@
-{% extends "base.html" %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Ultimate Tic-Tac-Toe</title>
+    <script>
+        function redirectToGame() {
+            window.location.href = "{% url 'game:board' %}"; // Adjust URL name if needed
+        }
 
-{% block body %}
-    <h1>Multiplayer</h1>
-    <div class="code-section">
-        <button class="button" onclick="generateCode()" id="generate-code-btn">Create Code</button>
-        <p id="generated-code">Your Code: <span></span></p>
-    </div>
-    <form method="POST" >
-        {% csrf_token %}
-        <label for="code-input">Enter Code:</label>
-        <input type="text" id="code-input" name="code" required>
-        <button type="submit" class="button">Submit</button>
-    </form>
-    <a href="{% url 'game:main_menu' %}" class="back-link" onclick="navigateWithSound(event, '{% url 'game:main_menu' %}')">Back</a>
-{% endblock %}
+        setTimeout(redirectToGame, 2000); // Redirect after 2 seconds
+    </script>
+</head>
+<body>
+    <h1>Multiplayer Ultimate Tic-Tac-Toe</h1>
+    <p>Redirecting to the game board...</p>
+    <a href="{% url 'game:board' %}">Click here if not redirected</a>
+</body>
+</html>

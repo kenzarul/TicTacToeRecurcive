@@ -272,39 +272,37 @@
                 </div>
             </div>
         </div>
-    {% endwith %}
+{% endwith %}
+
 
 
 <script>
-  function showResultModal(result) {
+function showResultModal(result) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
 
     if (result === 'X') {
-      title.textContent = '🎉 Bravo! 🎉';
-      message.textContent = 'Player X Wins the Game!';
+        title.textContent = '🎉 Bravo! 🎉';
+        message.textContent = 'Player X Wins the Game!';
     } else if (result === 'O') {
-      title.textContent = '🎉 Bravo! 🎉';
-      message.textContent = 'Player O Wins the Game!';
+        title.textContent = '🎉 Bravo! 🎉';
+        message.textContent = 'Player O Wins the Game!';
     } else {
-      title.textContent = 'Game Over';
-      message.textContent = 'The game ended in a stalemate!';
+        title.textContent = 'Game Over';
+        message.textContent = 'The game ended in a stalemate!';
     }
 
     modal.style.display = 'block';
-  }
+    modal.classList.add('fade-in');
+    document.querySelector('.modal-content').classList.add('slide-down');
+}
 
-  function closeModal() {
-    document.getElementById('gameResultModal').style.display = 'none';
-  }
-
-  // Close modal when clicking outside
-  window.onclick = function(event) {
+function closeModal() {
     const modal = document.getElementById('gameResultModal');
-    if (event.target == modal) {
-      closeModal();
-    }
-  }
+    modal.classList.remove('fade-in');
+    document.querySelector('.modal-content').classList.remove('slide-down');
+    modal.style.display = 'none';
+}
 </script>
 {% endblock %}

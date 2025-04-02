@@ -26,20 +26,43 @@ class GoodPlayer:
         player = game.next_player
         opponent = 'O' if player == 'X' else 'X'
 
-        for strategy in [self.find_winning_move, self.find_winning_move, self.find_fork, self.find_fork]:
-            move = strategy(board, player if strategy != self.find_winning_move else opponent)
-            if move is not None:
-                return move
+        # 1. Check for immediate win
+        win_move = self.find_winning_move(board, player)
+        if win_move is not None:
+            return win_move
 
+        # 2. Block opponent's immediate win
+        block_move = self.find_winning_move(board, opponent)
+        if block_move is not None:
+            return block_move
+
+        # 3. Try to create a fork
+        fork_move = self.find_fork(board, player)
+        if fork_move is not None:
+            return fork_move
+
+        # 4. Take center if available
         if board[4] == ' ':
             return 4
 
+        # 5. Take opposite corner if opponent is in corner
         for (corner, opposite) in [(0, 8), (2, 6), (6, 2), (8, 0)]:
             if board[corner] == opponent and board[opposite] == ' ':
                 return opposite
 
-        best_moves = sorted([(self.POSITION_SCORES[i], i) for i in range(9) if board[i] == ' '], reverse=True)
-        return best_moves[0][1] if best_moves else None
+        # 6. Take any empty corner
+        corners = [0, 2, 6, 8]
+        empty_corners = [c for c in corners if board[c] == ' ']
+        if empty_corners:
+            return random.choice(empty_corners)
+
+        # 7. Take any empty side
+        sides = [1, 3, 5, 7]
+        empty_sides = [s for s in sides if board[s] == ' ']
+        if empty_sides:
+            return random.choice(empty_sides)
+
+        return None
 
     def find_winning_move(self, board, player):
         for combo in self.WINNING_COMBINATIONS:
@@ -49,44 +72,52 @@ class GoodPlayer:
         return None
 
     def find_fork(self, board, player):
+        # Find moves that create two ways to win
         for move in [i for i, v in enumerate(board) if v == ' ']:
             board_copy = board[:]
             board_copy[move] = player
-            if sum(1 for combo in self.WINNING_COMBINATIONS if [board_copy[i] for i in combo].count(player) == 2 and [board_copy[i] for i in combo].count(' ') == 1) >= 2:
-                return move
+            winning_moves = 0
+            for combo in self.WINNING_COMBINATIONS:
+                values = [board_copy[i] for i in combo]
+                if values.count(player) == 2 and values.count(' ') == 1:
+                    winning_moves += 1
+                    if winning_moves >= 2:
+                        return move
         return None
 
-#cann't be used yet the depth is not yet configured
+
 class LegendPlayer:
     WINNING_COMBINATIONS = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
         [0, 3, 6], [1, 4, 7], [2, 5, 8],
         [0, 4, 8], [2, 4, 6]
     ]
-    POSITION_SCORES = [
-        3, 2, 3,
-        2, 4, 2,
-        3, 2, 3
-    ]
 
     def play(self, game):
         board = list(game.board)
         player = game.next_player
+        opponent = 'O' if player == 'X' else 'X'
         best_score = -math.inf
         best_move = None
 
+        # First check for immediate wins/blocks
+        immediate_move = self.check_immediate_moves(board, player, opponent)
+        if immediate_move is not None:
+            return immediate_move
+
+        # Then use minimax for deeper analysis
         for i in range(9):
             if board[i] == ' ':
                 board[i] = player
-                score = self.minimax(board, 0, False, player, 'O' if player == 'X' else 'X', -math.inf, math.inf)
+                score = self.minimax(board, 0, False, player, opponent)
                 board[i] = ' '
                 if score > best_score:
                     best_score = score
                     best_move = i
 
-        return best_move
+        return best_move if best_move is not None else random.choice([i for i, v in enumerate(board) if v == ' '])
 
-    def minimax(self, board, depth, is_maximizing, ai_player, human_player, alpha, beta):
+    def minimax(self, board, depth, is_maximizing, ai_player, human_player):
         winner = self.evaluate_winner(board)
         if winner == ai_player:
             return 10 - depth
@@ -95,32 +126,44 @@ class LegendPlayer:
         elif ' ' not in board:
             return 0
 
-        best_score = -math.inf if is_maximizing else math.inf
-        for i in self.get_sorted_moves(board, ai_player if is_maximizing else human_player):
-            board[i] = ai_player if is_maximizing else human_player
-            score = self.minimax(board, depth + 1, not is_maximizing, ai_player, human_player, alpha, beta)
-            board[i] = ' '
-            best_score = max(best_score, score) if is_maximizing else min(best_score, score)
-            if is_maximizing:
-                alpha = max(alpha, score)
-            else:
-                beta = min(beta, score)
-            if beta <= alpha:
-                break
-        return best_score
+        if is_maximizing:
+            best_score = -math.inf
+            for i in range(9):
+                if board[i] == ' ':
+                    board[i] = ai_player
+                    score = self.minimax(board, depth + 1, False, ai_player, human_player)
+                    board[i] = ' '
+                    best_score = max(score, best_score)
+            return best_score
+        else:
+            best_score = math.inf
+            for i in range(9):
+                if board[i] == ' ':
+                    board[i] = human_player
+                    score = self.minimax(board, depth + 1, True, ai_player, human_player)
+                    board[i] = ' '
+                    best_score = min(score, best_score)
+            return best_score
+
+    def check_immediate_moves(self, board, player, opponent):
+        # Check for immediate win
+        for combo in self.WINNING_COMBINATIONS:
+            values = [board[i] for i in combo]
+            if values.count(player) == 2 and values.count(' ') == 1:
+                return combo[values.index(' ')]
+
+        # Check for immediate block
+        for combo in self.WINNING_COMBINATIONS:
+            values = [board[i] for i in combo]
+            if values.count(opponent) == 2 and values.count(' ') == 1:
+                return combo[values.index(' ')]
+        return None
 
     def evaluate_winner(self, board):
         for combo in self.WINNING_COMBINATIONS:
-            values = [board[i] for i in combo]
-            if values == ['X', 'X', 'X']:
-                return 'X'
-            elif values == ['O', 'O', 'O']:
-                return 'O'
+            if board[combo[0]] == board[combo[1]] == board[combo[2]] != ' ':
+                return board[combo[0]]
         return None
-
-    def get_sorted_moves(self, board, player):
-        best_moves = sorted([(self.POSITION_SCORES[i], i) for i in range(9) if board[i] == ' '], reverse=True)
-        return [i for _, i in best_moves]
 
 def get_player(player_name):
     if player_name == 'game.players.GoodPlayer':

@@ -9,12 +9,11 @@
     </div>
     <div class="modal-body">
       <p id="resultMessage"></p>
-      <div class="confetti"></div>
-      <div class="confetti"></div>
-      <div class="confetti"></div>
-      <div class="confetti"></div>
-      <div class="confetti"></div>
+        <div class="confetti-container"></div>
     </div>
+      <audio id="confettiSound" preload="auto">
+    <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+    </audio>
     <div class="modal-footer">
       <a href="{% url 'game:index' %}" class="modal-btn new-game">New Game</a>
       <button onclick="closeModal()" class="modal-btn exit">Exit</button>
@@ -281,6 +280,11 @@ function showResultModal(result) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
+    const confettiContainer = document.querySelector('.confetti-container');
+    const confettiSound = document.getElementById('confettiSound');
+
+    // Clear previous confetti
+    confettiContainer.innerHTML = '';
 
     if (result === 'X') {
         title.textContent = '🎉 Bravo! 🎉';
@@ -289,20 +293,41 @@ function showResultModal(result) {
         title.textContent = '🎉 Bravo! 🎉';
         message.textContent = 'Player O Wins the Game!';
     } else {
-        title.textContent = 'Game Over';
+        title.textContent = '🎉 Game Over! 🎉';
         message.textContent = 'The game ended in a stalemate!';
     }
 
     modal.style.display = 'block';
     modal.classList.add('fade-in');
     document.querySelector('.modal-content').classList.add('slide-down');
-}
 
-function closeModal() {
-    const modal = document.getElementById('gameResultModal');
-    modal.classList.remove('fade-in');
-    document.querySelector('.modal-content').classList.remove('slide-down');
-    modal.style.display = 'none';
+    // Create 150 pieces of confetti (you can increase this number)
+    for (let i = 0; i < 150; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+
+        // Random positioning
+        confetti.style.left = Math.random() * 100 + 'vw';
+        confetti.style.top = -10 + 'px';
+
+        // Random animation duration
+        confetti.style.animationDuration = 3 + Math.random() * 4 + 's';
+
+        // Random delay
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+
+        // Random size
+        const size = 5 + Math.random() * 10;
+        confetti.style.width = size + 'px';
+        confetti.style.height = size + 'px';
+
+        confettiContainer.appendChild(confetti);
+    }
+
+    // Play celebration sound
+    confettiSound.volume = 0.3; // Adjust volume
+    confettiSound.currentTime = 0; // Rewind to start
+    confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
 </script>
 {% endblock %}

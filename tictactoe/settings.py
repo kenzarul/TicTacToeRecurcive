@@ -24,7 +24,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'channels',
     'game',
 ]
 
@@ -55,17 +54,6 @@ TEMPLATES = [
         },
     },
 ]
-
-ASGI_APPLICATION = 'tictactoe.asgi.application'
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],  # Redis must be running
-        },
-    },
-}
 
 WSGI_APPLICATION = 'tictactoe.wsgi.application'
 

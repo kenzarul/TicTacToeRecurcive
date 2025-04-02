@@ -7,8 +7,8 @@ from .models import Game, SubGame
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 
-def choose_level(request):
-    return render(request, 'game/choose_level.html')
+def single_player(request):
+    return render(request, 'game/single_player.html')
 
 def multiplayer(request):
     return render(request, 'game/multiplayer.html')
@@ -28,7 +28,7 @@ def index(request):
             return redirect(game)
     else:
         form = NewGameForm()
-    return render(request, 'game/choose_level.html', {'form': form})
+    return render(request, 'game/single_player.html', {'form': form})
 
 
 @require_http_methods(["GET", "POST"])

@@ -417,6 +417,36 @@ button.modal-button {
     }
 }
 
+/* Rain Effect */
+.rain-drop {
+    position: absolute;
+    background-color: #7f7f7f;
+    opacity: 0.7;
+    animation: rainDrop 2s linear forwards;
+    border-radius: 50% 50% 60% 40%;
+}
+
+@keyframes rainDrop {
+    0% {
+        transform: translateY(-10px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Darker modal for losing */
+.modal.lose {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content.lose {
+    background: linear-gradient(135deg, #333333, #666666);
+    color: #ccc;
+}
+
 
 @media (max-width: 768px) {
     .menu-container,

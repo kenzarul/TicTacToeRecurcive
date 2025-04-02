@@ -286,12 +286,26 @@ function showResultModal(result) {
     // Clear previous confetti
     confettiContainer.innerHTML = '';
 
+    // Determine if the player lost (algorithm won)
+    const playerLost = (result === 'X' && "{{ game.player_x }}" !== "human") ||
+                      (result === 'O' && "{{ game.player_o }}" !== "human");
+
     if (result === 'X') {
-        title.textContent = '🎉 Bravo! 🎉';
-        message.textContent = 'Player X Wins the Game!';
+        if (playerLost) {
+            title.textContent = '💀 You Lose! 💀';
+            message.textContent = 'Player X (Algorithm) Wins!';
+        } else {
+            title.textContent = '🎉 Bravo! 🎉';
+            message.textContent = 'Player X Wins the Game!';
+        }
     } else if (result === 'O') {
-        title.textContent = '🎉 Bravo! 🎉';
-        message.textContent = 'Player O Wins the Game!';
+        if (playerLost) {
+            title.textContent = '💀 You Lose! 💀';
+            message.textContent = 'Player O (Algorithm) Wins!';
+        } else {
+            title.textContent = '🎉 Bravo! 🎉';
+            message.textContent = 'Player O Wins the Game!';
+        }
     } else {
         title.textContent = '🎉 Game Over! 🎉';
         message.textContent = 'The game ended in a stalemate!';
@@ -301,32 +315,58 @@ function showResultModal(result) {
     modal.classList.add('fade-in');
     document.querySelector('.modal-content').classList.add('slide-down');
 
-    // Create 150 pieces of confetti (you can increase this number)
-    for (let i = 0; i < 150; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
+    // Create particles based on win/lose
+    if (playerLost) {
+        // Create rain effect for losing
+        for (let i = 0; i < 100; i++) {
+            const drop = document.createElement('div');
+            drop.classList.add('rain-drop');
 
-        // Random positioning
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.top = -10 + 'px';
+            // Random positioning
+            drop.style.left = Math.random() * 100 + 'vw';
+            drop.style.top = -10 + 'px';
 
-        // Random animation duration
-        confetti.style.animationDuration = 3 + Math.random() * 4 + 's';
+            // Random animation duration
+            drop.style.animationDuration = 1 + Math.random() * 2 + 's';
 
-        // Random delay
-        confetti.style.animationDelay = Math.random() * 2 + 's';
+            // Random delay
+            drop.style.animationDelay = Math.random() * 2 + 's';
 
-        // Random size
-        const size = 5 + Math.random() * 10;
-        confetti.style.width = size + 'px';
-        confetti.style.height = size + 'px';
+            // Random size
+            const size = 1 + Math.random() * 3;
+            drop.style.width = size + 'px';
+            drop.style.height = size * 5 + 'px';
 
-        confettiContainer.appendChild(confetti);
+            confettiContainer.appendChild(drop);
+        }
+    } else {
+        // Create confetti for winning
+        for (let i = 0; i < 150; i++) {
+            const confetti = document.createElement('div');
+            confetti.classList.add('confetti');
+
+            // Random positioning
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.top = -10 + 'px';
+
+            // Random animation duration
+            confetti.style.animationDuration = 3 + Math.random() * 4 + 's';
+
+            // Random delay
+            confetti.style.animationDelay = Math.random() * 2 + 's';
+
+            // Random size
+            const size = 5 + Math.random() * 10;
+            confetti.style.width = size + 'px';
+            confetti.style.height = size + 'px';
+
+            confettiContainer.appendChild(confetti);
+        }
     }
 
     // Play celebration sound
-    confettiSound.volume = 0.3; // Adjust volume
-    confettiSound.currentTime = 0; // Rewind to start
+    confettiSound.volume = 0.3;
+    confettiSound.currentTime = 0;
     confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
 </script>

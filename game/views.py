@@ -1,9 +1,14 @@
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
 
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
 
+
+@login_required
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 
@@ -12,6 +17,16 @@ def single_player(request):
 
 def multiplayer(request):
     return render(request, 'game/multiplayer.html')
+def signup(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('game:main_menu')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
 def index(request):
@@ -60,3 +75,5 @@ def game(request, pk):
         'next_player': game.next_player
     }
     return render(request, "game/game_detail_3.html", context)
+
+

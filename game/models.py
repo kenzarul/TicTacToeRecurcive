@@ -70,28 +70,31 @@ class Game(models.Model):
         return ' '  # Stalemate
 
     def play(self, main_index, sub_index):
-        if self.active_index and main_index != self.active_index:
+        # Check if there's an active index and if the move is in the wrong board
+        if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
 
+        # Validate indices
         if (main_index < 0 or main_index >= 9) or (sub_index < 0 or sub_index >= 9):
             raise IndexError("Invalid board index")
 
+        # Check if the main board position is already taken
         if self.board[main_index] != ' ':
-            return
+            return None
 
+        # Get the subgame
         sub_game = self.sub_games.filter(index=int(main_index)).first()
-
         if sub_game is None:
             raise ValueError("Invalid sub index")
 
-        # Check if the subgrid is won or full
-        if sub_game.is_game_over != None:
+        # Check if the subgame is already completed
+        if sub_game.is_game_over is not None:
             available_subgrids = [i for i in range(9) if self.board[i] == ' ']
             if available_subgrids:
                 self.set_active_index(random.choice(available_subgrids))
             else:
                 self.active_index = None
-            return
+            return None
 
         # Proceed with the normal play
         winner = sub_game.play(sub_index)
@@ -102,16 +105,21 @@ class Game(models.Model):
         self.last_sub_index = sub_index
         self.save()
 
+        # Update the main board if the subgame was won
         if winner is not None:
             board = list(self.board)
             board[main_index] = winner
-            self.board = u''.join(board)
+            self.board = ''.join(board)
         else:
+            # Mark as drawn if the subgame is full but no winner
             board = list(self.board)
-            board[main_index] = ' '
-            self.board = u''.join(board)
+            if ' ' not in sub_game.board:
+                board[main_index] = ' '  # Mark as drawn
+            self.board = ''.join(board)
 
+        # Set the next active index
         self.set_active_index(sub_index)
+        return winner
 
     def set_active_index(self, index):
         if self.board[index] != ' ':

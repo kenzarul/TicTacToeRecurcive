@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+
+from asgiref.typing import ASGIApplication
 from django.templatetags import static
 
 
@@ -66,6 +68,7 @@ DATABASES = {
     }
 }
 
+ASGI_APPLICATION = 'tictactoe.routing.application'
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {

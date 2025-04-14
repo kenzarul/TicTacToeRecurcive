@@ -45,6 +45,9 @@ def index(request):
         form = NewGameForm()
     return render(request, 'game/single_player.html', {'form': form})
 
+def test(request):
+    return render(request, 'game/test.html')
+
 
 @require_http_methods(["GET", "POST"])
 def game(request, pk):

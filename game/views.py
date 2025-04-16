@@ -11,6 +11,9 @@ from .models import Game, SubGame
 @login_required
 def main_menu(request):
     return render(request, 'game/main_menu.html')
+def main_menu_guest(request):
+    return render(request, 'game/main_menu.html', {'guest': True})
+
 
 def single_player(request):
     return render(request, 'game/single_player.html')

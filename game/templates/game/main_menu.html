@@ -6,3 +6,10 @@
     <a href="{% url 'game:index' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:index' %}')">Single Player</a>
     <a href="{% url 'game:multiplayer' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:multiplayer' %}')">MultiPlayer</a>
 {% endblock %}
+{% if user.is_authenticated %}
+    <p>Bienvenue {{ user.username }}</p>
+{% elif guest %}
+    <p>Bienvenue invité !</p>
+{% else %}
+    <p>Bienvenue !</p>
+{% endif %}

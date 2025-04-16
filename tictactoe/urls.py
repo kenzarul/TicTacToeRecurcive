@@ -1,12 +1,16 @@
-from django.urls import include, path, re_path
-from django.views.generic import RedirectView
 from django.contrib import admin
+from django.urls import path, include
+from django.views.generic import RedirectView
 
-admin.autodiscover()
+from game import views
 
 urlpatterns = [
-    re_path(r'^$', RedirectView.as_view(url='/game/', permanent=False)),
-    path('game/', include('game.urls', namespace='game')),
+    path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
     path('admin/', admin.site.urls),
-    path('', include ('game.urls', namespace='game')),
+    path('accounts/', include('django.contrib.auth.urls')),  # login/logout
+    path('signup/', views.signup, name='signup'),  # Laisse comme ça si tu utilises directement `views.signup`
+
+    path('game/', include(('game.urls', 'game'), namespace='game')),  # ton app
+    path('guest/', views.main_menu_guest, name='main_menu_guest'),
+
 ]

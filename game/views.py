@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
 
-
+# Cette vue affiche le menu principal du jeu après login
 @login_required
 def main_menu(request):
     return render(request, 'game/main_menu.html')

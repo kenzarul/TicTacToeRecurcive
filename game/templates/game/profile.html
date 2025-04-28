@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block body %}
+    <h2>Mon Profil</h2>
+    <p><strong>Nom d'utilisateur :</strong> {{ user.username }}</p>
+    <p><strong>Email :</strong> {{ user.email }}</p>
+
+    <h3>Historique de mes jeux :</h3>
+    <ul>
+        {% for game in games %}
+            <li>Partie ID : {{ game.id }} | Date : {{ game.date_created }}</li>
+        {% empty %}
+            <li>Pas encore de parties jouées.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

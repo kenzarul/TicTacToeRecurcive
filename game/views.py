@@ -6,12 +6,21 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 import random
 import string
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from game.models import Game
 
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
+from django.db.models import Q
 
 # ======================= Main Menu Views =======================
-
+@login_required
+def profile(request):
+    user_games = Game.objects.filter(
+        Q(player_x=request.user) | Q(player_o=request.user)
+    )
+    return render(request, 'game/profile.html', {'user_games': user_games})
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 

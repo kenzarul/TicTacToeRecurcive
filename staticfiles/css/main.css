@@ -158,4 +158,19 @@ body {
     height: 80px;
     line-height: 80px;
   }
+  .profile-icon {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 32px;
+    text-decoration: none;
+    color: #007bff;
+    transition: color 0.3s ease;
+    z-index: 1000;
+}
+
+.profile-icon:hover {
+    color: #0056b3;
+}
+
 }

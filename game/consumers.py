@@ -2,6 +2,7 @@
 
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
 from .models import Game
 
 class GameConsumer(AsyncWebsocketConsumer):
@@ -93,5 +94,3 @@ class GameConsumer(AsyncWebsocketConsumer):
             return await database_sync_to_async(Game.objects.get)(room_code=self.room_code)
         except Game.DoesNotExist:
             return None
-
-from channels.db import database_sync_to_async

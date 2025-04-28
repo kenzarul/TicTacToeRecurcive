@@ -1,24 +1,40 @@
+# game/consumers.py
+
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
-from django.core.exceptions import ValidationError
 from .models import Game
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.game_id = self.scope['url_route']['kwargs']['game_id']
-        self.room_group_name = f'game_{self.game_id}'
+        self.room_code = self.scope['url_route']['kwargs']['room_code']
+        self.group_name = f"game_{self.room_code}"
 
-        # Join game group
         await self.channel_layer.group_add(
-            self.room_group_name,
+            self.group_name,
             self.channel_name
         )
         await self.accept()
 
+        # Check if two players connected to the room
+        game = await self.get_game()
+
+        if game and game.player_x and game.player_o:
+            # Send start signal to both players
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'start_game',
+                }
+            )
+        else:
+            # Only one player, still waiting
+            await self.send(text_data=json.dumps({
+                'type': 'waiting'
+            }))
+
     async def disconnect(self, close_code):
-        # Leave game group
         await self.channel_layer.group_discard(
-            self.room_group_name,
+            self.group_name,
             self.channel_name
         )
 
@@ -28,64 +44,54 @@ class GameConsumer(AsyncWebsocketConsumer):
         sub_index = data['sub_index']
         player = data['player']
 
-        try:
-            game = Game.objects.get(pk=self.game_id)
+        game = await self.get_game()
 
-            if game.winner:
-                await self.send(text_data=json.dumps({
-                    'error': 'Game already over.',
-                    'winner': game.winner,
-                }))
-                return
+        if not game:
+            await self.send(text_data=json.dumps({'error': 'Game not found.'}))
+            return
 
-            # Figure out if player is X or O
-            if player == game.player_x:
-                player_symbol = 'X'
-            elif player == game.player_o:
-                player_symbol = 'O'
-            else:
-                await self.send(text_data=json.dumps({
-                    'error': 'Invalid player.'
-                }))
-                return
+        if game.winner:
+            await self.send(text_data=json.dumps({'error': 'Game already over.'}))
+            return
 
-            # Check turn
-            if player_symbol != game.next_player:
-                await self.send(text_data=json.dumps({
-                    'error': 'Not your turn.'
-                }))
-                return
+        if player != (game.player_x if game.next_player == 'X' else game.player_o):
+            await self.send(text_data=json.dumps({'error': 'Not your turn.'}))
+            return
 
-            winner = game.play(main_index, sub_index)
+        winner = game.play(main_index, sub_index)
 
-            # Broadcast move to everyone
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'move_message',
-                    'main_index': main_index,
-                    'sub_index': sub_index,
-                    'player': player_symbol,
-                    'next_player': 'O' if player_symbol == 'X' else 'X',
-                    'winner': winner
-                }
-            )
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'game_update',
+                'main_index': main_index,
+                'sub_index': sub_index,
+                'player': 'X' if game.next_player == 'O' else 'O',  # previous move
+                'next_player': game.next_player,
+                'winner': winner
+            }
+        )
 
-        except Game.DoesNotExist:
-            await self.send(text_data=json.dumps({
-                'error': 'Game not found.'
-            }))
-        except (ValidationError, ValueError, IndexError) as e:
-            await self.send(text_data=json.dumps({
-                'error': str(e)
-            }))
+    async def start_game(self, event):
+        # Send "start" signal to all
+        await self.send(text_data=json.dumps({
+            'type': 'start'
+        }))
 
-    async def move_message(self, event):
+    async def game_update(self, event):
         await self.send(text_data=json.dumps({
             'type': 'move',
             'main_index': event['main_index'],
             'sub_index': event['sub_index'],
             'player': event['player'],
             'next_player': event['next_player'],
-            'winner': event['winner'],
+            'winner': event['winner']
         }))
+
+    async def get_game(self):
+        try:
+            return await database_sync_to_async(Game.objects.get)(room_code=self.room_code)
+        except Game.DoesNotExist:
+            return None
+
+from channels.db import database_sync_to_async

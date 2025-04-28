@@ -3,49 +3,89 @@
 {% block body %}
 <h1>Ultimate Tic Tac Toe - Multiplayer</h1>
 
-<div id="info">
-  <p><strong>Room Code:</strong> {{ game.room_code }}</p>
+<!-- Waiting Screen -->
+<div id="waiting-screen" style="text-align: center; margin-top: 50px;">
+  <h2>Ultimate Tic Tac Toe - Multiplayer</h2>
+  <p><strong>Room Code:</strong> <span id="room-code">{{ game.room_code }}</span>
+    <button onclick="copyCode()" style="margin-left: 10px;">Copy</button>
+  </p>
   <p><strong>Player X:</strong> {{ game.player_x }}</p>
   <p><strong>Player O:</strong> {{ game.player_o }}</p>
-  <p><strong>Current Turn:</strong> <span id="current-turn">{{ game.next_player }}</span></p>
+  <h3>Waiting for another player to join...</h3>
 </div>
 
-<div id="game-board" style="display: flex; flex-wrap: wrap; width: 630px; margin-top: 20px;">
-  {% for big_index in "012345678" %}
-    <div class="big-board" style="width: 200px; height: 200px; border: 2px solid black; margin: 5px; display: flex; flex-wrap: wrap;">
-      {% for small_index in "012345678" %}
-        <div class="small-square"
-             data-main="{{ big_index }}"
-             data-sub="{{ small_index }}"
-             style="width: 60px; height: 60px; border: 1px solid grey; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">
-        </div>
-      {% endfor %}
-    </div>
-  {% endfor %}
-</div>
+<!-- Game Container -->
+<div id="game-container" style="display: none; margin-top: 30px;">
 
-<div id="winner-message" style="margin-top: 20px; font-size: 24px; color: green;"></div>
+  <div id="info">
+    <p><strong>Room Code:</strong> <span id="final-room-code">{{ game.room_code }}</span></p>
+    <p><strong>Player X:</strong> {{ game.player_x }}</p>
+    <p><strong>Player O:</strong> {{ game.player_o }}</p>
+    <p><strong>Current Turn:</strong> <span id="current-turn">{{ game.next_player }}</span></p>
+  </div>
+
+  <div id="game-board" style="display: flex; flex-wrap: wrap; width: 630px; margin-top: 20px;">
+    {% for big in "012345678" %}
+      <div class="big-board" style="width: 200px; height: 200px; border: 2px solid black; margin: 5px; display: flex; flex-wrap: wrap;">
+        {% for small in "012345678" %}
+          <div class="small-square" data-main="{{ big }}" data-sub="{{ small }}"
+              style="width: 60px; height: 60px; border: 1px solid grey; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <div id="winner-message" style="margin-top: 20px; font-size: 24px; color: green;"></div>
+
+</div>
 
 <script>
+// COPY ROOM CODE FUNCTION
+function copyCode() {
+  const code = document.getElementById("room-code").textContent;
+  navigator.clipboard.writeText(code)
+    .then(() => alert("Room Code copied!"))
+    .catch(err => alert("Failed to copy: " + err));
+}
 
-const myPlayer = "{{ game.player_x }}" === "{{ request.user.username }}" ? "{{ game.player_x }}" : "{{ game.player_o }}";
+// Player detection
+{% if game.player_x == request.user.username %}
+const myPlayer = "{{ game.player_x }}";
+{% else %}
+const myPlayer = "{{ game.player_o }}";
+{% endif %}
+
 const gameId = "{{ game.id }}";
 const currentTurnElement = document.getElementById("current-turn");
 const winnerMessage = document.getElementById("winner-message");
 
+const waitingScreen = document.getElementById("waiting-screen");
+const gameContainer = document.getElementById("game-container");
+
 let socket = new WebSocket(
-    "ws://" + window.location.host + "/ws/game/" + gameId + "/"
+    "ws://" + window.location.host + "/ws/game/{{ game.room_code }}/"
 );
 
-// ... rest is the same
-
-
 socket.onopen = function(e) {
-    console.log("WebSocket connection established");
+    console.log("WebSocket connection established ✅");
 };
 
 socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
+    console.log("Received:", data);
+
+    if (data.type === 'waiting') {
+        waitingScreen.style.display = 'block';
+        gameContainer.style.display = 'none';
+        return;
+    }
+
+    if (data.type === 'start') {
+        waitingScreen.style.display = 'none';
+        gameContainer.style.display = 'block';
+        return;
+    }
 
     if (data.error) {
         alert(data.error);
@@ -62,11 +102,11 @@ socket.onmessage = function(e) {
         const squares = document.querySelectorAll(`.small-square[data-main="${main}"][data-sub="${sub}"]`);
         if (squares.length > 0) {
             squares[0].textContent = player;
-            squares[0].style.pointerEvents = 'none';  // prevent playing again
+            squares[0].style.pointerEvents = 'none';
         }
 
         if (winner) {
-            winnerMessage.textContent = winner === ' ' ? "Stalemate!" : `${winner} wins the game! 🎉`;
+            winnerMessage.textContent = winner === ' ' ? "Stalemate!" : `${winner} wins! 🎉`;
             socket.close();
         } else {
             currentTurnElement.textContent = nextPlayer;
@@ -75,7 +115,7 @@ socket.onmessage = function(e) {
 };
 
 socket.onclose = function(e) {
-    console.log("WebSocket closed");
+    console.log("WebSocket closed ❌");
 };
 
 socket.onerror = function(e) {

@@ -43,7 +43,22 @@ def multiplayer(request):
 
 def multiplayer_game_view(request, game_id):
     game = get_object_or_404(Game, id=game_id)
-    return render(request, 'game/test.html', {'game': game})
+
+    # Fix player detection
+    if request.user.is_authenticated:
+        my_player = request.user.username
+    else:
+        # If user not logged in, decide if he is X or O
+        if game.player_o == '':
+            my_player = game.player_x
+        else:
+            my_player = game.player_o
+
+    return render(request, 'game/test.html', {
+        'game': game,
+        'my_player': my_player,  # 🎯 Pass my_player to template!
+    })
+
 
 # ======================= Multiplayer Create/Join Room Views =======================
 

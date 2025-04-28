@@ -73,14 +73,6 @@ body {
   font-size: 45px;
 }
 
-.square.player-X {
-    color: red; /* Red for X */
-}
-
-.square.player-O {
-    color: #0000ff; /* Blue for O */
-}
-
 .square {
   border-right: 2px solid black;
 }
@@ -102,22 +94,35 @@ body {
   transition: opacity 0.3s ease, background-color 0.3s ease;
 }
 
+.square.player-human {
+    color: #0000ff !important; /* Force blue for human */
+}
+
+.square.player-ai {
+    color: #ff0000 !important; /* Force red for AI */
+}
+
+/* Playable boards */
+.playable-board {
+    background-color: rgba(0, 255, 0, 0.2);
+}
+
+/* Active board (when specific board must be played) */
+.active {
+    background-color: rgba(0, 255, 0, 0.2);
+}
+
+/* Won boards */
+.won-human {
+    background-color: rgba(0, 0, 255, 0.1) !important; /* Blue for human wins */
+}
+
+.won-ai {
+    background-color: rgba(255, 0, 0, 0.1) !important; /* Red for AI wins */
+}
+
 .square button[type=submit]:hover {
   opacity: 1;
-}
-
-
-/* Active board highlighting */
-.active {
-  background-color: rgba(0, 255, 0, 0.1);
-}
-
-.won-X {
-  background-color: rgba(255, 0, 0, 0.2);
-}
-
-.won-O {
-  background-color: rgba(0, 0, 255, 0.2);
 }
 
 .draw {

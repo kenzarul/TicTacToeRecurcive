@@ -10,7 +10,9 @@
       {% endif %}>{{ next_player }}</button>
   </form>
 {% else %}
-  <div class="square {% if play == 'X' %}player-X{% elif play == 'O' %}player-O{% endif %}
+  <div class="square
+              {% if play == 'X' and game.player_x == 'human' or play == 'O' and game.player_o == 'human' %}player-human
+              {% else %}player-ai{% endif %}
               {% if last_main_index == current_main_index and last_sub_index == index %}rainbow-color{% endif %}">
       {{ play }}
   </div>

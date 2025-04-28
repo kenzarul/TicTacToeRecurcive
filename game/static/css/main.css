@@ -95,11 +95,11 @@ body {
 }
 
 .square.player-human {
-    color: #0000ff !important; /* Force blue for human */
+    color: #0000ff ; /* Force blue for human */
 }
 
 .square.player-ai {
-    color: #ff0000 !important; /* Force red for AI */
+    color: #ff0000 ; /* Force red for AI */
 }
 
 /* Playable boards */

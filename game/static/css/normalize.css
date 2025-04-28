@@ -140,13 +140,6 @@ a {
     100% { color: purple; }
 }
 
-.last-move {
-    animation: rainbow 9s ease-in-out infinite;
-}
-
-.square.last-played {
-    animation: rainbow 9s infinite;
-}
 
 .rainbow-color {
     animation: rainbow 2s infinite;

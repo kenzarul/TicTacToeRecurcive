@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 
 {% block body %}
-    <title>Connexion - TicTacToe</title>
 <h2>Login</h2>
 <form method="post">
     {% csrf_token %}
@@ -9,10 +8,12 @@
     <button type="submit" class="button">Se connecter</button>
 </form>
 
-<p>Don't have an account? <a href="{% url 'signup' %}">Create one</a></p>
-
-<!-- Bouton pour jouer sans compte -->
-<form method="get" action="{% url 'main_menu_guest' %}">
-    <button type="submit" class="button">Jouer sans compte</button>
-</form>
+<div style="margin-top: 15px; text-align: center;">
+    <p>Don't have an account?</p>
+    <a href="{% url 'signup' %}" class="button" style="display: inline-block; margin-bottom: 10px;">Create one</a>
+    <br>
+    <form method="get" action="{% url 'game:main_menu_guest' %}">
+        <button type="submit" class="button">Jouer sans compte</button>
+    </form>
+</div>
 {% endblock %}

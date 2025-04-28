@@ -1,17 +1,26 @@
 {% extends "base.html" %}
-{% load static %}
 
 {% block body %}
-    <h1>Multiplayer</h1>
-    <div class="code-section">
-        <button class="button" onclick="generateCode()" id="generate-code-btn">Create Code</button>
-        <p id="generated-code">Your Code: <span></span></p>
-    </div>
-    <form method="POST" >
-        {% csrf_token %}
-        <label for="code-input">Enter Code:</label>
-        <input type="text" id="code-input" name="code" required>
-        <button type="submit" class="button">Submit</button>
-    </form>
-    <a href="{% url 'game:main_menu' %}" class="back-link" onclick="navigateWithSound(event, '{% url 'game:main_menu' %}')">Back</a>
+<h1>Multiplayer</h1>
+
+<!-- Form to create a new game -->
+<form method="POST" action="{% url 'game:create_multiplayer' %}">
+    {% csrf_token %}
+    <button type="submit" class="button">Create Code</button>
+</form>
+
+<br>
+
+<!-- Form to join an existing game -->
+<form method="POST" action="{% url 'game:join_multiplayer' %}">
+    {% csrf_token %}
+    <label for="code-input">Enter Code:</label>
+    <input type="text" id="code-input" name="code" required>
+    <button type="submit" class="button">Submit</button>
+</form>
+
+<br>
+
+<a href="{% url 'game:main_menu' %}" class="back-link">Back</a>
+
 {% endblock %}

@@ -1,46 +1,32 @@
 from django.contrib.auth import login, authenticate
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
+import random
+import string
 
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
 
-# Cette vue affiche le menu principal du jeu après login
-@login_required
+# ======================= Main Menu Views =======================
+
 def main_menu(request):
     return render(request, 'game/main_menu.html')
+
 def main_menu_guest(request):
     return render(request, 'game/main_menu.html', {'guest': True})
 
+# ======================= Single Player Views =======================
 
 def single_player(request):
     return render(request, 'game/single_player.html')
-
-def multiplayer(request):
-    return render(request, 'game/multiplayer.html')
-def signup(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            return redirect('game:main_menu')
-    else:
-        form = UserCreationForm()
-    return render(request, 'registration/signup.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
 def index(request):
     if request.method == "POST":
         form = NewGameForm(request.POST)
-        # Theoretically the only way this form can be invalid
-        # is in the case of programmer error or malfeasance --
-        # the user doesn't have anything to do.
         if form.is_valid():
             game = form.create()
-            # In case the computer is X, it goes first.
             game.play_auto()
             game.save()
             return redirect(game)
@@ -48,9 +34,66 @@ def index(request):
         form = NewGameForm()
     return render(request, 'game/single_player.html', {'form': form})
 
-def test(request):
-    return render(request, 'game/test.html')
+# ======================= Multiplayer Lobby View =======================
 
+def multiplayer(request):
+    return render(request, 'game/multiplayer.html')
+
+# ======================= Multiplayer Game View =======================
+
+def multiplayer_game_view(request, game_id):
+    game = get_object_or_404(Game, id=game_id)
+    return render(request, 'game/test.html', {'game': game})
+
+# ======================= Multiplayer Create/Join Room Views =======================
+
+def generate_unique_room_code():
+    while True:
+        code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        if not Game.objects.filter(room_code=code).exists():
+            return code
+
+def create_multiplayer(request):
+    if request.method == "POST":
+        code = generate_unique_room_code()
+
+        # If logged in, use username; if not, use "Guest" + random number
+        if request.user.is_authenticated:
+            player_name = request.user.username
+        else:
+            player_name = "Guest" + ''.join(random.choices(string.digits, k=4))
+
+        game = Game.objects.create(
+            player_x=player_name,
+            player_o='',  # waiting for second player
+            board=" " * 9,
+            room_code=code
+        )
+        return redirect('game:multiplayer_game', game_id=game.id)
+
+    return redirect('game:multiplayer')
+
+def join_multiplayer(request):
+    if request.method == "POST":
+        code = request.POST.get('code', '').upper()
+        game = Game.objects.filter(room_code=code, player_o='').first()
+
+        if game:
+            if request.user.is_authenticated:
+                player_name = request.user.username
+            else:
+                player_name = "Guest" + ''.join(random.choices(string.digits, k=4))
+
+            game.player_o = player_name
+            game.save()
+            return redirect('game:multiplayer_game', game_id=game.id)
+        else:
+            # Return to multiplayer page with error
+            return render(request, 'game/multiplayer.html', {'error': 'Invalid code or room full.'})
+
+    return redirect('game:multiplayer')
+
+# ======================= Classic Single Game Play View =======================
 
 @require_http_methods(["GET", "POST"])
 def game(request, pk):
@@ -82,4 +125,15 @@ def game(request, pk):
     }
     return render(request, "game/game_detail_3.html", context)
 
+# ======================= Authentication View =======================
 
+def signup(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('game:main_menu')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})

@@ -9,6 +9,7 @@ from game.players import get_player
 
 
 class Game(models.Model):
+    room_code = models.CharField(max_length=6, unique=True, null=True, blank=True)
     last_main_index = models.PositiveIntegerField(null=True, blank=True)  # Track main board index
     last_sub_index = models.PositiveIntegerField(null=True, blank=True)  # Track sub board index
     date_created = models.DateTimeField(auto_now_add=True)

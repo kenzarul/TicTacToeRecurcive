@@ -2,6 +2,8 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
 import random
 import string
 
@@ -20,6 +22,23 @@ def main_menu_guest(request):
 
 def single_player(request):
     return render(request, 'game/single_player.html')
+
+def multiplayer(request):
+    return render(request, 'game/multiplayer.html')
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('login')
+        else:
+            password_errors = form.errors.get('password2')
+            if password_errors:
+                if any('too similar' in str(e) or 'too common' in str(e) for e in password_errors):
+                    form.add_error('password2', "⚠️ Mot de passe trop simple, veuillez choisir un mot de passe plus fort.")
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})
 
 @require_http_methods(["GET", "POST"])
 def index(request):

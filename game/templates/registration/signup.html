@@ -8,6 +8,9 @@
     <button type="submit" class="button">Sign up</button>
 </form>
 <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+    <label>
+        <input type="password" name="password1" required minlength="6">
+    </label>
 {% endblock %}
 
 

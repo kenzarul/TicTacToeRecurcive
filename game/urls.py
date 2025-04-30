@@ -22,4 +22,5 @@ urlpatterns = [
     path('multi/create/', views.create_multiplayer, name='create_multiplayer'),  # Create room
     path('multi/join/', views.join_multiplayer, name='join_multiplayer'),  # Join room
     path('multi/game/<int:game_id>/', views.multiplayer_game_view, name='multiplayer_game'),  # Multiplayer game page
+
 ]

@@ -1,5 +1,4 @@
 {% extends "base.html" %}
-
 {% block body %}
 <h1>Ultimate Tic Tac Toe - Multiplayer</h1>
 
@@ -7,26 +6,25 @@
 <div id="waiting-screen" style="text-align: center; margin-top: 50px;">
   <h2>Ultimate Tic Tac Toe - Multiplayer</h2>
   <p><strong>Room Code:</strong> <span id="room-code">{{ game.room_code }}</span>
-    <button onclick="copyCode()" style="margin-left: 10px;">Copy</button>
+    <button onclick="copyCode()" style="margin-left: 10px;">📋 Copy</button>
   </p>
-  <p><strong>Player X:</strong> {{ game.player_x }}</p>
-  <p><strong>Player O:</strong> {{ game.player_o }}</p>
-  <h3>Waiting for another player to join...</h3>
+  <p><strong>Username:</strong> {{ request.user.username }}</p>
+  <h3>⏳ Waiting for another player to join...</h3>
 </div>
 
 <!-- Game Container -->
 <div id="game-container" style="display: none; margin-top: 30px;">
-
   <div id="info">
-    <p><strong>Room Code:</strong> <span id="final-room-code">{{ game.room_code }}</span></p>
-    <p><strong>Player X:</strong> {{ game.player_x }}</p>
-    <p><strong>Player O:</strong> {{ game.player_o }}</p>
-    <p><strong>Current Turn:</strong> <span id="current-turn">{{ game.next_player }}</span></p>
+    <p><strong>Username:</strong> {{ request.user.username }}</p>
+<p><strong>You are:</strong> <span id="assigned-player">?</span></p>
+<p><strong>Opponent:</strong> <span id="opponent-name">?</span></p>
+<p><strong>Current Turn:</strong> <span id="current-turn">-</span></p>
+
   </div>
 
   <div id="game-board" style="display: flex; flex-wrap: wrap; width: 630px; margin-top: 20px;">
     {% for big in "012345678" %}
-      <div class="big-board" style="width: 200px; height: 200px; border: 2px solid black; margin: 5px; display: flex; flex-wrap: wrap;">
+      <div class="big-board" data-board-index="{{ big }}" style="width: 200px; height: 200px; border: 2px solid black; margin: 5px; display: flex; flex-wrap: wrap;">
         {% for small in "012345678" %}
           <div class="small-square" data-main="{{ big }}" data-sub="{{ small }}"
               style="width: 60px; height: 60px; border: 1px solid grey; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">
@@ -37,11 +35,12 @@
   </div>
 
   <div id="winner-message" style="margin-top: 20px; font-size: 24px; color: green;"></div>
-
+  <div style="margin-top: 20px;">
+    <button id="restart-btn" style="display: none; padding: 10px 20px; font-size: 16px;">🔄 Restart Game</button>
+  </div>
 </div>
 
 <script>
-// COPY ROOM CODE FUNCTION
 function copyCode() {
   const code = document.getElementById("room-code").textContent;
   navigator.clipboard.writeText(code)
@@ -49,92 +48,84 @@ function copyCode() {
     .catch(err => alert("Failed to copy: " + err));
 }
 
-// Player detection
-{% if game.player_x == request.user.username %}
-const myPlayer = "{{ game.player_x }}";
-{% else %}
-const myPlayer = "{{ game.player_o }}";
-{% endif %}
-
-const gameId = "{{ game.id }}";
+let myPlayer = null;
 const currentTurnElement = document.getElementById("current-turn");
 const winnerMessage = document.getElementById("winner-message");
-
+const assignedPlayerElement = document.getElementById("assigned-player");
 const waitingScreen = document.getElementById("waiting-screen");
 const gameContainer = document.getElementById("game-container");
 
-let socket = new WebSocket(
-    "ws://" + window.location.host + "/ws/game/{{ game.room_code }}/"
-);
+const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
 
-socket.onopen = function(e) {
-    console.log("WebSocket connection established ✅");
-};
+socket.onopen = () => console.log("WebSocket connected");
 
-socket.onmessage = function(e) {
+socket.onmessage = function (e) {
     const data = JSON.parse(e.data);
-    console.log("Received:", data);
-
+    if (data.type === 'player_assignment') {
+        myPlayer = data.player;
+        assignedPlayerElement.textContent = myPlayer;
+    }
     if (data.type === 'waiting') {
         waitingScreen.style.display = 'block';
         gameContainer.style.display = 'none';
-        return;
     }
-
     if (data.type === 'start') {
-        waitingScreen.style.display = 'none';
-        gameContainer.style.display = 'block';
-        return;
-    }
+    waitingScreen.style.display = 'none';
+    gameContainer.style.display = 'block';
 
-    if (data.error) {
-        alert(data.error);
-        return;
-    }
+    currentTurnElement.textContent = data.next_player;
 
-    if (data.type === "move") {
-        const main = data.main_index;
-        const sub = data.sub_index;
-        const player = data.player;
-        const nextPlayer = data.next_player;
-        const winner = data.winner;
+    // Set opponent
+    const myUsername = "{{ request.user.username }}";
+    const opponent = (data.player_x === myUsername) ? data.player_o : data.player_x;
+    document.getElementById("opponent-name").textContent = opponent ?? "Waiting...";
+}
 
-        const squares = document.querySelectorAll(`.small-square[data-main="${main}"][data-sub="${sub}"]`);
-        if (squares.length > 0) {
-            squares[0].textContent = player;
-            squares[0].style.pointerEvents = 'none';
+    if (data.type === 'move') {
+        const square = document.querySelector(`.small-square[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);
+        if (square) {
+            square.textContent = data.player;
+            square.style.pointerEvents = 'none';
         }
+        currentTurnElement.textContent = data.next_player;
 
-        if (winner) {
-            winnerMessage.textContent = winner === ' ' ? "Stalemate!" : `${winner} wins! 🎉`;
+        if (data.winner) {
+            winnerMessage.textContent = data.winner === ' ' ? "Stalemate!" : `${data.winner} wins! 🎉`;
+            document.getElementById("restart-btn").style.display = 'inline-block';
             socket.close();
-        } else {
-            currentTurnElement.textContent = nextPlayer;
+        }
+
+        document.querySelectorAll(".big-board").forEach((board, index) => {
+            board.style.boxShadow = (parseInt(data.active_index) === index) ? "0 0 10px 4px #3b82f6" : "none";
+        });
+
+        for (let i = 0; i < 9; i++) {
+            const squares = document.querySelectorAll(`.small-square[data-main="${i}"]`);
+            const isFull = [...squares].every(s => s.textContent.trim() !== "");
+            squares.forEach(sq => {
+                sq.style.opacity = isFull ? "0.5" : "1";
+                sq.style.pointerEvents = isFull ? "none" : "auto";
+            });
         }
     }
 };
 
-socket.onclose = function(e) {
-    console.log("WebSocket closed ❌");
-};
-
-socket.onerror = function(e) {
-    console.error("WebSocket error:", e);
-};
-
-// Allow clicking squares
 document.querySelectorAll(".small-square").forEach(square => {
-    square.addEventListener("click", function() {
-        const main = this.getAttribute("data-main");
-        const sub = this.getAttribute("data-sub");
+    square.addEventListener("click", function () {
+        if (!myPlayer) return;
+        if (myPlayer !== currentTurnElement.textContent.trim()) {
+            alert("It's not your turn!");
+            return;
+        }
 
         socket.send(JSON.stringify({
-            "main_index": parseInt(main),
-            "sub_index": parseInt(sub),
-            "player": myPlayer
+            main_index: parseInt(this.dataset.main),
+            sub_index: parseInt(this.dataset.sub),
+            player: myPlayer
         }));
     });
 });
-</script>
 
+document.getElementById("restart-btn").addEventListener("click", () => location.reload());
+</script>
 {% endblock %}

@@ -72,23 +72,15 @@ def multiplayer(request):
 
 # ======================= Multiplayer Game View =======================
 
+from django.shortcuts import render, get_object_or_404
+
 def multiplayer_game_view(request, game_id):
     game = get_object_or_404(Game, id=game_id)
-
-    # Fix player detection
-    if request.user.is_authenticated:
-        my_player = request.user.username
-    else:
-        # If user not logged in, decide if he is X or O
-        if game.player_o == '':
-            my_player = game.player_x
-        else:
-            my_player = game.player_o
-
     return render(request, 'game/test.html', {
         'game': game,
-        'my_player': my_player,  # 🎯 Pass my_player to template!
+        'my_player': request.user.username if request.user.is_authenticated else "Guest"
     })
+
 
 
 # ======================= Multiplayer Create/Join Room Views =======================
@@ -102,42 +94,26 @@ def generate_unique_room_code():
 def create_multiplayer(request):
     if request.method == "POST":
         code = generate_unique_room_code()
-
-        # If logged in, use username; if not, use "Guest" + random number
-        if request.user.is_authenticated:
-            player_name = request.user.username
-        else:
-            player_name = "Guest" + ''.join(random.choices(string.digits, k=4))
-
         game = Game.objects.create(
-            player_x=player_name,
-            player_o='',  # waiting for second player
+            player_x=None,  # Let WebSocket assign
+            player_o=None,
             board=" " * 9,
             room_code=code
         )
         return redirect('game:multiplayer_game', game_id=game.id)
-
     return redirect('game:multiplayer')
-
 def join_multiplayer(request):
     if request.method == "POST":
-        code = request.POST.get('code', '').upper()
-        game = Game.objects.filter(room_code=code, player_o='').first()
+        code = request.POST.get('code', '').strip().upper()
+        game = Game.objects.filter(room_code=code, player_o__isnull=True).first()
 
         if game:
-            if request.user.is_authenticated:
-                player_name = request.user.username
-            else:
-                player_name = "Guest" + ''.join(random.choices(string.digits, k=4))
-
-            game.player_o = player_name
-            game.save()
             return redirect('game:multiplayer_game', game_id=game.id)
         else:
-            # Return to multiplayer page with error
-            return render(request, 'game/multiplayer.html', {'error': 'Invalid code or room full.'})
+            return render(request, 'game/multiplayer.html', {'error': '❌ Invalid code or room is full.'})
 
     return redirect('game:multiplayer')
+
 
 # ======================= Classic Single Game Play View =======================
 

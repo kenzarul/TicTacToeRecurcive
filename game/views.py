@@ -1,4 +1,4 @@
-from django.contrib.auth import login, authenticate
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
@@ -9,6 +9,7 @@ import string
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from game.models import Game
+from django.contrib.auth import logout
 
 from .forms import NewGameForm, PlayForm
 from .models import Game, SubGame
@@ -21,10 +22,12 @@ def profile(request):
         Q(player_x=request.user) | Q(player_o=request.user)
     )
     return render(request, 'game/profile.html', {'user_games': user_games})
+@login_required
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 
 def main_menu_guest(request):
+    logout(request)
     return render(request, 'game/main_menu.html', {'guest': True})
 
 # ======================= Single Player Views =======================

@@ -1,16 +1,33 @@
 {% extends 'base.html' %}
 
 {% block body %}
-    <h2>Mon Profil</h2>
-    <p><strong>Nom d'utilisateur :</strong> {{ user.username }}</p>
-    <p><strong>Email :</strong> {{ user.email }}</p>
+<div class="profile-container" style="max-width: 600px; margin: 50px auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
+    <h2 style="font-size: 2.2rem;">👤 Mon Profil</h2>
 
-    <h3>Historique de mes jeux :</h3>
-    <ul>
+    <p><strong>Nom d'utilisateur :</strong> {{ user.username }}</p>
+
+    <h3 style="margin-top: 25px;">🎮 Historique de mes jeux :</h3>
+    <ul style="list-style-type: none; padding: 0;">
         {% for game in games %}
-            <li>Partie ID : {{ game.id }} | Date : {{ game.date_created }}</li>
+            <li>🕹️ Partie ID : {{ game.id }} | 📅 {{ game.date_created|date:"d M Y H:i" }}</li>
         {% empty %}
-            <li>Pas encore de parties jouées.</li>
+            <li>❌ Pas encore de parties jouées.</li>
         {% endfor %}
     </ul>
+
+    <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
+        <!-- Bouton Retour -->
+        <a href="{% url 'game:main_menu' %}" class="button" style="background-color: #007bff; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
+            🔙 Retour
+        </a>
+
+        <!-- Déconnexion (POST) -->
+        <form method="POST" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="button" style="background-color: red; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                🔐 Déconnexion
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}

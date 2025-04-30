@@ -1,9 +1,11 @@
 from django.urls import path
 from . import views
+from django.contrib.auth import views as auth_views
 
 app_name = "game"
 
 urlpatterns = [
+    path('accounts/logout/', auth_views.LogoutView.as_view(next_page='game:main_menu'), name='logout'),
     # Main menus
     path('', views.main_menu, name='main_menu'),
     path('guest/', views.main_menu_guest, name='main_menu_guest'),

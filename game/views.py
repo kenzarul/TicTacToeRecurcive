@@ -31,6 +31,9 @@ def main_menu_guest(request):
     return render(request, 'game/main_menu.html', {'guest': True})
 
 # ======================= Single Player Views =======================
+def how_to_play(request):
+    return render(request, 'game/how_to_play.html')
+# ======================= Single Player Views =======================
 
 def single_player(request):
     return render(request, 'game/single_player.html')

@@ -440,7 +440,108 @@ button.modal-button {
     color: #ccc;
 }
 
+/*HOW TO PLAY*/
+/* Add these to your existing CSS */
 
+.help-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 40px;
+    font-size: 24px;
+    font-weight: bold;
+    text-decoration: none;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.help-button:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}
+
+/* Styles for the how-to-play page */
+.how-to-play {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.how-to-play h1 {
+    color: #4CAF50;
+    margin-bottom: 20px;
+}
+
+.how-to-play ol {
+    text-align: left;
+    margin: 20px 0;
+    padding-left: 20px;
+}
+
+.how-to-play li {
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.back-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.back-button:hover {
+    background-color: #45a049;
+}
+
+.rules-container {
+    text-align: left;
+    margin: 20px 0;
+}
+
+.rules-container h2 {
+    color: #4CAF50;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.rules-container ol, .rules-container ul {
+    margin: 15px 0;
+    padding-left: 30px;
+}
+
+.rules-container li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.rules-container strong {
+    color: #4CAF50;
+}
+
+.rules-container ul ul {
+    margin: 5px 0;
+    padding-left: 20px;
+    list-style-type: circle;
+}
+
+/**/
 @media (max-width: 768px) {
     .menu-container,
     .game-container {

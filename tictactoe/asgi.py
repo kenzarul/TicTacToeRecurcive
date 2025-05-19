@@ -3,6 +3,7 @@ import django  # ⬅️ Must be imported explicitly
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
+from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tictactoe.settings')
 
@@ -10,6 +11,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tictactoe.settings')
 django.setup()
 
 import game.routing  # ⬅️ Now safe to import app modules
+
+http_application = ASGIStaticFilesHandler(get_asgi_application())
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),

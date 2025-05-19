@@ -10,3 +10,4 @@ six
 sqlparse
 tox
 channels
+whitenoise

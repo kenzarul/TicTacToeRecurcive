@@ -449,7 +449,7 @@ button.modal-button {
     right: 20px;
     width: 40px;
     height: 40px;
-    background-color: #4CAF50;
+    background-color: #dc143c;
     color: white;
     border-radius: 50%;
     text-align: center;
@@ -495,7 +495,7 @@ button.modal-button {
 
 /* Title and Content Styling */
 .how-to-play-content h1 {
-    color: #4CAF50;
+    color: #dc143c ;
     margin-bottom: 25px;
     text-align: center;
     font-size: 2.5rem;
@@ -530,7 +530,7 @@ button.modal-button {
 }
 
 .rules-container strong {
-    color: #4CAF50;
+    color: #007bff;
 }
 
 .rules-container ul ul {
@@ -545,7 +545,7 @@ button.modal-button {
     width: 200px;
     margin: 30px auto 0;
     padding: 12px 25px;
-    background-color: #4CAF50;
+    background-color: #dc143c ;
     color: white;
     text-decoration: none;
     border-radius: 5px;

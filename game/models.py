@@ -1,6 +1,5 @@
 import random
 from collections import Counter
-
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
@@ -16,6 +15,7 @@ class Game(models.Model):
     player_o = models.CharField(max_length=255, null=True, blank=True)
     active_index = models.PositiveIntegerField(null=True, blank=True)
     winner = models.CharField(max_length=64, null=True, blank=True)
+    last_player = models.CharField(max_length=1, null=True, blank=True)  # 'X' or 'O'
 
     WINNING = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -31,28 +31,30 @@ class Game(models.Model):
 
     @property
     def next_player(self):
-        boards = ''.join(self.sub_games.values_list('board', flat=True))
-        count = Counter(boards)
-        return 'O' if count.get('X', 0) > count.get('O', 0) else 'X'
+        return 'O' if self.last_player == 'X' else 'X'
 
     @property
     def is_game_over(self):
         board = list(self.board)
         for wins in self.WINNING:
-            w = (board[wins[0]], board[wins[1]], board[wins[2]])
-            if w == ('X', 'X', 'X'):
+            line = (board[wins[0]], board[wins[1]], board[wins[2]])
+            if line == ('X', 'X', 'X'):
                 self.winner = 'X'
                 self.save()
                 return 'X'
-            if w == ('O', 'O', 'O'):
+            if line == ('O', 'O', 'O'):
                 self.winner = 'O'
                 self.save()
                 return 'O'
-        return None if ' ' in board else ' '  # Draw
+        return None if ' ' in board else ' '
 
-    def play(self, main_index, sub_index):
+    def play(self, main_index, sub_index, symbol=None):
+        if symbol is None:
+            symbol = self.next_player
+
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
+
         if main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
         if self.board[main_index] != ' ':
@@ -67,16 +69,19 @@ class Game(models.Model):
             self.set_active_index(random.choice(available) if available else None)
             return None
 
-        winner = sub_game.play(sub_index)
+        winner = sub_game.play(sub_index, symbol)
         sub_game.save()
 
         self.last_main_index = main_index
         self.last_sub_index = sub_index
+        self.last_player = symbol
 
+        board = list(self.board)
         if winner:
-            self.board = self.board[:main_index] + winner + self.board[main_index + 1:]
+            board[main_index] = winner
         elif ' ' not in sub_game.board:
-            self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
+            board[main_index] = ' '
+        self.board = ''.join(board)
 
         self.set_active_index(sub_index)
         self.save()
@@ -95,6 +100,8 @@ class Game(models.Model):
                 player_x=self.player_x,
                 player_o=self.player_o
             )
+        self.last_player = None
+        self.save()
 
     def play_auto(self):
         if not self.is_game_over:
@@ -102,13 +109,16 @@ class Game(models.Model):
             player = self.player_x if next_symbol == 'X' else self.player_o
             if player == 'human':
                 return
+
             from game.players import get_player
             player_obj = get_player(player)
+
             main_index = self.active_index if self.active_index is not None else random.choice(
-                [i for i, v in enumerate(self.board) if v == ' '])
+                [i for i, v in enumerate(self.board) if v == ' ']
+            )
             sub_game = self.sub_games.filter(index=main_index).first()
-            sub_index = player_obj.play(sub_game)
-            self.play(main_index, sub_index)
+            sub_index = player_obj.play(sub_game, next_symbol)
+            self.play(main_index, sub_index, next_symbol)
 
 
 class SubGame(models.Model):
@@ -129,32 +139,28 @@ class SubGame(models.Model):
         return f"SubGame {self.game.pk}-{self.index}"
 
     @property
-    def next_player(self):
-        count = Counter(self.board)
-        return 'O' if count.get('X', 0) > count.get('O', 0) else 'X'
-
-    @property
     def is_game_over(self):
         board = list(self.board)
         for wins in self.WINNING:
-            w = (board[wins[0]], board[wins[1]], board[wins[2]])
-            if w == ('X', 'X', 'X'):
+            line = (board[wins[0]], board[wins[1]], board[wins[2]])
+            if line == ('X', 'X', 'X'):
                 self.winner = 'X'
                 self.save()
                 return 'X'
-            if w == ('O', 'O', 'O'):
+            if line == ('O', 'O', 'O'):
                 self.winner = 'O'
                 self.save()
                 return 'O'
-        return None if ' ' in board else ' '  # Draw
+        return None if ' ' in board else ' '
 
-    def play(self, index):
+    def play(self, index, symbol):
         if index < 0 or index >= 9:
             raise IndexError("Invalid board index")
         if self.board[index] != ' ':
             raise ValueError("Square already played")
+
         board = list(self.board)
-        board[index] = self.next_player
+        board[index] = symbol
         self.board = ''.join(board)
         self.last_move_index = index
         self.save()
@@ -162,13 +168,14 @@ class SubGame(models.Model):
 
     def play_auto(self):
         if not self.is_game_over:
-            next_symbol = self.next_player
+            next_symbol = 'O' if self.board.count('X') > self.board.count('O') else 'X'
             player = self.player_x if next_symbol == 'X' else self.player_o
             if player == 'human':
                 return
+
             from game.players import get_player
             player_obj = get_player(player)
-            sub_index = player_obj.play(self)
-            self.play(sub_index)
+            sub_index = player_obj.play(self, next_symbol)
+            self.play(sub_index, next_symbol)
             self.last_move_index = sub_index
             self.save()

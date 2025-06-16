@@ -1,8 +1,8 @@
 import random
-from collections import Counter
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
+
 
 class Game(models.Model):
     room_code = models.CharField(max_length=6, unique=True, null=True, blank=True)
@@ -15,7 +15,7 @@ class Game(models.Model):
     player_o = models.CharField(max_length=255, null=True, blank=True)
     active_index = models.PositiveIntegerField(null=True, blank=True)
     winner = models.CharField(max_length=64, null=True, blank=True)
-    last_player = models.CharField(max_length=1, null=True, blank=True)  # 'X' or 'O'
+    last_player = models.CharField(max_length=1, null=True, blank=True)
 
     WINNING = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -37,12 +37,12 @@ class Game(models.Model):
     def is_game_over(self):
         board = list(self.board)
         for wins in self.WINNING:
-            line = (board[wins[0]], board[wins[1]], board[wins[2]])
-            if line == ('X', 'X', 'X'):
+            w = (board[wins[0]], board[wins[1]], board[wins[2]])
+            if w == ('X', 'X', 'X'):
                 self.winner = 'X'
                 self.save()
                 return 'X'
-            if line == ('O', 'O', 'O'):
+            if w == ('O', 'O', 'O'):
                 self.winner = 'O'
                 self.save()
                 return 'O'
@@ -54,7 +54,6 @@ class Game(models.Model):
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
-
         if main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
         if self.board[main_index] != ' ':
@@ -76,15 +75,14 @@ class Game(models.Model):
         self.last_sub_index = sub_index
         self.last_player = symbol
 
-        board = list(self.board)
         if winner:
-            board[main_index] = winner
+            self.board = self.board[:main_index] + winner + self.board[main_index + 1:]
         elif ' ' not in sub_game.board:
-            board[main_index] = ' '
-        self.board = ''.join(board)
+            self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
 
         self.set_active_index(sub_index)
         self.save()
+        self.is_game_over  # <-- This triggers global win check
         return winner
 
     def set_active_index(self, index):
@@ -112,12 +110,10 @@ class Game(models.Model):
 
             from game.players import get_player
             player_obj = get_player(player)
-
             main_index = self.active_index if self.active_index is not None else random.choice(
-                [i for i, v in enumerate(self.board) if v == ' ']
-            )
+                [i for i, v in enumerate(self.board) if v == ' '])
             sub_game = self.sub_games.filter(index=main_index).first()
-            sub_index = player_obj.play(sub_game, next_symbol)
+            sub_index = player_obj.play(sub_game)
             self.play(main_index, sub_index, next_symbol)
 
 
@@ -142,12 +138,12 @@ class SubGame(models.Model):
     def is_game_over(self):
         board = list(self.board)
         for wins in self.WINNING:
-            line = (board[wins[0]], board[wins[1]], board[wins[2]])
-            if line == ('X', 'X', 'X'):
+            w = (board[wins[0]], board[wins[1]], board[wins[2]])
+            if w == ('X', 'X', 'X'):
                 self.winner = 'X'
                 self.save()
                 return 'X'
-            if line == ('O', 'O', 'O'):
+            if w == ('O', 'O', 'O'):
                 self.winner = 'O'
                 self.save()
                 return 'O'
@@ -162,6 +158,7 @@ class SubGame(models.Model):
         board = list(self.board)
         board[index] = symbol
         self.board = ''.join(board)
+
         self.last_move_index = index
         self.save()
         return self.is_game_over

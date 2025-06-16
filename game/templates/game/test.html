@@ -4,7 +4,6 @@
 
 <!-- Waiting Screen -->
 <div id="waiting-screen" style="text-align: center; margin-top: 50px;">
-  <h2>Ultimate Tic Tac Toe - Multiplayer</h2>
   <p><strong>Room Code:</strong> <span id="room-code">{{ game.room_code }}</span>
     <button onclick="copyCode()" style="margin-left: 10px;">📋 Copy</button>
   </p>
@@ -13,24 +12,25 @@
 </div>
 
 <!-- Game Container -->
-<div id="game-container" style="display: none; margin-top: 30px;">
+<div id="game-container" style="display: none;">
   <div id="info">
-    <p><strong>Username:</strong> {{ request.user.username }}</p>
-<p><strong>You are:</strong> <span id="assigned-player">?</span></p>
-<p><strong>Opponent:</strong> <span id="opponent-name">?</span></p>
-<p><strong>Current Turn:</strong> <span id="current-turn">-</span></p>
-
+    <p><strong>You are:</strong> <span id="assigned-player">?</span></p>
+    <p><strong>Opponent:</strong> <span id="opponent-name">?</span></p>
+    <p><strong>Current Turn:</strong> <span id="current-turn">-</span></p>
   </div>
 
-  <div id="game-board" style="display: flex; flex-wrap: wrap; width: 630px; margin-top: 20px;">
+  <div class="ultimate-board" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 30px;">
     {% for big in "012345678" %}
-      <div class="big-board" data-board-index="{{ big }}" style="width: 200px; height: 200px; border: 2px solid black; margin: 5px; display: flex; flex-wrap: wrap;">
-        {% for small in "012345678" %}
-          <div class="small-square" data-main="{{ big }}" data-sub="{{ small }}"
-              style="width: 60px; height: 60px; border: 1px solid grey; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">
-          </div>
-        {% endfor %}
+    <div class="big-board" data-board-index="{{ big }}"
+         style="display: grid; grid-template-columns: repeat(3, 1fr); width: 200px; height: 200px; border: 2px solid black;">
+      {% for small in "012345678" %}
+      <div class="small-square"
+           data-main="{{ big }}"
+           data-sub="{{ small }}"
+           style="width: 100%; height: 100%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer;">
       </div>
+      {% endfor %}
+    </div>
     {% endfor %}
   </div>
 
@@ -70,16 +70,14 @@ socket.onmessage = function (e) {
         gameContainer.style.display = 'none';
     }
     if (data.type === 'start') {
-    waitingScreen.style.display = 'none';
-    gameContainer.style.display = 'block';
+        waitingScreen.style.display = 'none';
+        gameContainer.style.display = 'block';
+        currentTurnElement.textContent = data.next_player;
 
-    currentTurnElement.textContent = data.next_player;
-
-    // Set opponent
-    const myUsername = "{{ request.user.username }}";
-    const opponent = (data.player_x === myUsername) ? data.player_o : data.player_x;
-    document.getElementById("opponent-name").textContent = opponent ?? "Waiting...";
-}
+        const myUsername = "{{ request.user.username }}";
+        const opponent = (data.player_x === myUsername) ? data.player_o : data.player_x;
+        document.getElementById("opponent-name").textContent = opponent ?? "Waiting...";
+    }
 
     if (data.type === 'move') {
         const square = document.querySelector(`.small-square[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);

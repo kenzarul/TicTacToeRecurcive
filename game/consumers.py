@@ -3,7 +3,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
 
-
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_code = self.scope['url_route']['kwargs']['room_code']
@@ -29,7 +28,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
         game = await self.get_game()
-        if game.player_x and game.player_o:
+
+        if game.player_x and game.player_o and not await self.subgames_exist(game):
+            await self.create_subgames(game)
             await self.channel_layer.group_send(
                 self.group_name,
                 {
@@ -104,13 +105,12 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
     # ----------------------------
-    # Database Helpers (Thread-safe)
+    # Database Helpers
     # ----------------------------
 
     @database_sync_to_async
     def get_or_create_game(self):
-        game, _ = Game.objects.get_or_create(room_code=self.room_code)
-        return game
+        return Game.objects.get_or_create(room_code=self.room_code)[0]
 
     @database_sync_to_async
     def get_game(self):
@@ -118,17 +118,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             return Game.objects.get(room_code=self.room_code)
         except Game.DoesNotExist:
             return None
-
-    @database_sync_to_async
-    def get_game_data(self):
-        game = Game.objects.get(room_code=self.room_code)
-        return {
-            'next_player': game.next_player,
-            'player_x': game.player_x,
-            'player_o': game.player_o,
-            'winner': game.winner,
-            'active_index': game.active_index,
-        }
 
     @database_sync_to_async
     def assign_player(self, game):
@@ -153,3 +142,22 @@ class GameConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def play_move(self, game, main_index, sub_index):
         return game.play(main_index, sub_index)
+
+    @database_sync_to_async
+    def get_game_data(self):
+        game = Game.objects.get(room_code=self.room_code)
+        return {
+            'next_player': game.next_player,
+            'player_x': game.player_x,
+            'player_o': game.player_o,
+            'winner': game.winner,
+            'active_index': game.active_index,
+        }
+
+    @database_sync_to_async
+    def subgames_exist(self, game):
+        return game.sub_games.exists()
+
+    @database_sync_to_async
+    def create_subgames(self, game):
+        game.create_subgames()

@@ -82,7 +82,7 @@ class Game(models.Model):
 
         self.set_active_index(sub_index)
         self.save()
-        self.is_game_over  # <-- This triggers global win check
+        self.is_game_over  # Trigger global win check
         return winner
 
     def set_active_index(self, index):
@@ -113,7 +113,7 @@ class Game(models.Model):
             main_index = self.active_index if self.active_index is not None else random.choice(
                 [i for i, v in enumerate(self.board) if v == ' '])
             sub_game = self.sub_games.filter(index=main_index).first()
-            sub_index = player_obj.play(sub_game)
+            sub_index = player_obj.play(sub_game, next_symbol)
             self.play(main_index, sub_index, next_symbol)
 
 

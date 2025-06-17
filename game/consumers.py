@@ -61,37 +61,64 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        main_index = data.get('main_index')
-        sub_index = data.get('sub_index')
-        player = data.get('player')
+        action = data.get('action')
 
-        game = await self.get_game()
-        if not game:
-            return
+        if action == 'move':
+            main_index = data.get('main_index')
+            sub_index = data.get('sub_index')
+            player = data.get('player')
 
-        try:
-            winner = await self.play_move(game, main_index, sub_index)
-        except Exception as e:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': str(e)
-            }))
-            return
+            game = await self.get_game()
+            if not game:
+                return
 
-        game_data = await self.get_game_data()
+            try:
+                winner = await self.play_move(game, main_index, sub_index)
+            except Exception as e:
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': str(e)
+                }))
+                return
 
-        await self.channel_layer.group_send(
-            self.group_name,
-            {
-                'type': 'move',
-                'main_index': main_index,
-                'sub_index': sub_index,
-                'player': player,
-                'next_player': game_data['next_player'],
-                'winner': game_data['winner'],
-                'active_index': game_data['active_index'],
-            }
-        )
+            game_data = await self.get_game_data()
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'move',
+                    'main_index': main_index,
+                    'sub_index': sub_index,
+                    'player': player,
+                    'next_player': game_data['next_player'],
+                    'winner': game_data['winner'],
+                    'active_index': game_data['active_index'],
+                }
+            )
+
+        elif action == 'surrender':
+            surrendering_player = data.get('player')
+            winner = 'O' if surrendering_player == 'X' else 'X'
+
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'surrender_game',
+                    'winner': winner,
+                    'message': f"{surrendering_player} surrendered. {winner} wins!",
+                }
+            )
+
+        elif action == 'replay_vote':
+            vote = data.get('vote')
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'replay_vote',
+                    'from': data.get('from'),
+                    'vote': vote,
+                }
+            )
 
     async def move(self, event):
         await self.send(text_data=json.dumps({
@@ -102,6 +129,20 @@ class GameConsumer(AsyncWebsocketConsumer):
             'next_player': event['next_player'],
             'winner': event['winner'],
             'active_index': event['active_index'],
+        }))
+
+    async def surrender_game(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'surrender',
+            'winner': event['winner'],
+            'message': event['message'],
+        }))
+
+    async def replay_vote(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'replay_vote',
+            'from': event['from'],
+            'vote': event['vote'],
         }))
 
     # ----------------------------

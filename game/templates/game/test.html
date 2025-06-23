@@ -16,6 +16,10 @@
   <p><strong>You:</strong> <span id="assigned-player">?</span> &nbsp; | &nbsp;
      <strong>Opponent:</strong> <span id="opponent-name">?</span></p>
   <p><strong>Turn:</strong> <span id="current-turn">-</span></p>
+  <div style="position:absolute; top:20px; right:20px; font-size:18px;">
+    <div>⏱ X: <span id="timer-x">0:00</span></div>
+    <div>⏱ O: <span id="timer-o">0:00</span></div>
+  </div>
   <button id="surrender-btn" style="padding:8px 16px; font-size:16px; margin-top:10px;">🚩 Surrender</button>
   <div id="vote-panel" style="display:none; margin-top:10px;">
     <span>Replay? </span>
@@ -42,12 +46,10 @@
   {% endfor %}
 </div>
 
-<!-- Result Modal -->
+<!-- Modal Result -->
 <div id="gameResultModal" class="modal" style="display:none;">
   <div class="modal-content">
-    <div class="modal-header">
-      <h2 id="resultTitle"></h2>
-    </div>
+    <div class="modal-header"><h2 id="resultTitle"></h2></div>
     <div class="modal-body">
       <p id="resultMessage"></p>
       <div class="confetti-container"></div>
@@ -70,6 +72,30 @@ function copyCode() {
 
 let myPlayer = null;
 let votes = {'X': false, 'O': false};
+let timer = {
+  X: {{ game.time_x|default:300 }},
+  O: {{ game.time_o|default:300 }}
+};
+let interval = null;
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function updateTimers() {
+  if (!myPlayer) return;
+  const turn = document.getElementById("current-turn").textContent;
+  if (turn === 'X' || turn === 'O') {
+    timer[turn]--;
+    document.getElementById(`timer-${turn.toLowerCase()}`).textContent = formatTime(timer[turn]);
+    if (timer[turn] <= 0) {
+      clearInterval(interval);
+      showResult(turn === 'X' ? 'O' : 'X', `${turn} ran out of time!`);
+    }
+  }
+}
 
 const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
 socket.onopen = () => console.log("WebSocket connected");
@@ -90,6 +116,10 @@ socket.onmessage = e => {
       document.getElementById("opponent-name").textContent =
         (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
       document.getElementById("current-turn").textContent = data.next_player;
+      document.getElementById("timer-x").textContent = formatTime(timer.X);
+      document.getElementById("timer-o").textContent = formatTime(timer.O);
+      if (interval) clearInterval(interval);
+      interval = setInterval(updateTimers, 1000);
       break;
 
     case 'move':
@@ -101,12 +131,7 @@ socket.onmessage = e => {
         }
         document.getElementById("current-turn").textContent = data.next_player;
         highlightActive(data.active_index);
-        if (data.winner) {
-          showResult(
-            data.winner,
-            data.winner === ' ' ? "Draw!" : `${data.winner} wins!`
-          );
-        }
+        if (data.winner) showResult(data.winner, data.winner === ' ' ? "Draw!" : `${data.winner} wins!`);
       }
       break;
 
@@ -125,7 +150,6 @@ socket.onmessage = e => {
   }
 };
 
-// UI Events
 document.querySelectorAll(".small-square").forEach(sq => {
   sq.onclick = () => {
     if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent)
@@ -140,9 +164,8 @@ document.querySelectorAll(".small-square").forEach(sq => {
 });
 
 document.getElementById("surrender-btn").onclick = () => {
-  if (confirm("Are you sure you want to surrender?")) {
+  if (confirm("Are you sure you want to surrender?"))
     socket.send(JSON.stringify({ action: 'surrender', player: myPlayer }));
-  }
 };
 
 document.getElementById("vote-yes").onclick = () => sendVote(true);
@@ -154,20 +177,18 @@ document.getElementById("replay-btn").onclick = () => {
 document.getElementById("exit-btn").onclick = () =>
   window.location.href = "{% url 'game:main_menu' %}";
 
-// Helpers
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
     board.style.boxShadow = (i === idx) ? "0 0 10px 4px #3b82f6" : "none";
   });
 }
-
 function showResult(winner, msg) {
   document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
   document.getElementById("resultMessage").textContent = msg;
   document.getElementById("gameResultModal").style.display = 'block';
   animateResult(winner !== myPlayer);
+  if (interval) clearInterval(interval);
 }
-
 function animateResult(isLoss) {
   const container = document.querySelector('.confetti-container');
   container.innerHTML = '';
@@ -191,21 +212,15 @@ function animateResult(isLoss) {
   }
   document.getElementById("vote-panel").style.display = 'block';
 }
-
 function sendVote(v) {
   socket.send(JSON.stringify({ action: 'replay_vote', from: myPlayer, vote: v ? 'yes' : 'no' }));
 }
-
 function updateVotesUI() {
   document.getElementById("vote-status").innerText =
     `Votes — X: ${votes.X ? '✔' : '✘'} O: ${votes.O ? '✔' : '✘'}`;
-  if (votes.X && votes.O) {
-    location.reload();
-  } else {
-    document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
-  }
+  if (votes.X && votes.O) location.reload();
+  else document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
 }
-
 function resetGameUI() {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.textContent = '';

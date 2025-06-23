@@ -1,6 +1,6 @@
 import random
 import string
-from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth import logout
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
@@ -52,7 +52,9 @@ def index(request):
 # ======================= Multiplayer Views =======================
 
 def multiplayer(request):
-    return render(request, 'game/multiplayer.html')
+    return render(request, 'game/multiplayer.html', {
+        'time_choices': range(1, 11)
+    })
 
 def generate_unique_room_code():
     while True:
@@ -63,13 +65,27 @@ def generate_unique_room_code():
 def create_multiplayer(request):
     if request.method == "POST":
         code = generate_unique_room_code()
+
+        try:
+            time_per_player = int(request.POST.get("time", 5))
+            if not 1 <= time_per_player <= 10:
+                raise ValueError
+        except (ValueError, TypeError):
+            return render(request, 'game/multiplayer.html', {
+                'time_choices': range(1, 11),
+                'error': "Invalid time value. Please choose between 1 and 10 minutes."
+            })
+
         game = Game.objects.create(
             room_code=code,
-            player_x=None,  # WebSocket will assign
+            player_x=None,
             player_o=None,
-            board=" " * 9
+            board=" " * 9,
+            time_x=time_per_player * 60,
+            time_o=time_per_player * 60,
         )
         return redirect('game:multiplayer_game', game_id=game.id)
+
     return redirect('game:multiplayer')
 
 def join_multiplayer(request):
@@ -80,6 +96,7 @@ def join_multiplayer(request):
             return redirect('game:multiplayer_game', game_id=game.id)
         else:
             return render(request, 'game/multiplayer.html', {
+                'time_choices': range(1, 11),
                 'error': '❌ Invalid code or room is full.'
             })
     return redirect('game:multiplayer')

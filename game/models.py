@@ -2,6 +2,7 @@ import random
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
+from django.utils import timezone
 
 
 class Game(models.Model):
@@ -16,6 +17,13 @@ class Game(models.Model):
     active_index = models.PositiveIntegerField(null=True, blank=True)
     winner = models.CharField(max_length=64, null=True, blank=True)
     last_player = models.CharField(max_length=1, null=True, blank=True)
+
+    # Timer fields
+    time_x = models.IntegerField(default=300)  # total time in seconds
+    time_o = models.IntegerField(default=300)
+    remaining_x = models.IntegerField(default=300)
+    remaining_o = models.IntegerField(default=300)
+    last_move_time = models.DateTimeField(null=True, blank=True)
 
     WINNING = [
         [0, 1, 2], [3, 4, 5], [6, 7, 8],
@@ -49,8 +57,29 @@ class Game(models.Model):
         return None if ' ' in board else ' '
 
     def play(self, main_index, sub_index, symbol=None):
+        if self.winner:
+            raise ValidationError("Game is already over")
+
         if symbol is None:
             symbol = self.next_player
+
+        now = timezone.now()
+        if self.last_move_time:
+            time_diff = int((now - self.last_move_time).total_seconds())
+            if self.last_player == 'X':
+                self.remaining_x = max(0, self.remaining_x - time_diff)
+                if self.remaining_x <= 0:
+                    self.winner = 'O'
+                    self.save()
+                    return self.winner
+            elif self.last_player == 'O':
+                self.remaining_o = max(0, self.remaining_o - time_diff)
+                if self.remaining_o <= 0:
+                    self.winner = 'X'
+                    self.save()
+                    return self.winner
+
+        self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
@@ -99,6 +128,9 @@ class Game(models.Model):
                 player_o=self.player_o
             )
         self.last_player = None
+        self.remaining_x = self.time_x
+        self.remaining_o = self.time_o
+        self.last_move_time = timezone.now()
         self.save()
 
     def play_auto(self):

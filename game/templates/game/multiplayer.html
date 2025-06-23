@@ -3,24 +3,30 @@
 {% block body %}
 <h1>Multiplayer</h1>
 
-<!-- Form to create a new game -->
+{% if error %}
+  <p style="color:red">{{ error }}</p>
+{% endif %}
+
 <form method="POST" action="{% url 'game:create_multiplayer' %}">
-    {% csrf_token %}
-    <button type="submit" class="button">Create Code</button>
+  {% csrf_token %}
+  <label for="time-input">Time per player (minutes):</label>
+  <select id="time-input" name="time" required>
+    {% for m in time_choices %}
+      <option value="{{ m }}">{{ m }} minute{{ m|pluralize }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="button">Create Game</button>
 </form>
 
-<br>
+<hr>
 
-<!-- Form to join an existing game -->
 <form method="POST" action="{% url 'game:join_multiplayer' %}">
-    {% csrf_token %}
-    <label for="code-input">Enter Code:</label>
-    <input type="text" id="code-input" name="code" required>
-    <button type="submit" class="button">Submit</button>
+  {% csrf_token %}
+  <label for="code-input">Enter Code:</label>
+  <input type="text" id="code-input" name="code" required maxlength="6" style="text-transform:uppercase">
+  <button type="submit" class="button">Join Game</button>
 </form>
 
 <br>
-
 <a href="{% url 'game:main_menu' %}" class="back-link">Back</a>
-
 {% endblock %}

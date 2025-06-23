@@ -12,6 +12,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         self.timer_task = None
+        self.vote_yes = {'X': False, 'O': False}
+        self.vote_no = {'X': False, 'O': False}
 
         game = await self.get_or_create_game()
         player_assigned = await self.assign_player(game)
@@ -30,14 +32,9 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
         game = await self.get_game()
-
         if game.player_x and game.player_o and not await self.subgames_exist(game):
             await self.create_subgames(game)
-            await self.channel_layer.group_send(
-                self.group_name,
-                {'type': 'start_game'}
-            )
-            # Start the timer for the first player
+            await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
             await self.start_timer_loop()
         else:
             await self.send(text_data=json.dumps({
@@ -49,10 +46,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         game = await self.get_game()
         if game:
             await self.reset_game(game)
-
         if self.timer_task:
             self.timer_task.cancel()
-
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def start_game(self, event):
@@ -71,64 +66,88 @@ class GameConsumer(AsyncWebsocketConsumer):
         action = data.get('action')
 
         if action == 'move':
-            main_index = data.get('main_index')
-            sub_index = data.get('sub_index')
-            player = data.get('player')
-
-            game = await self.get_game()
-            if not game or game.winner:
-                return
-
-            try:
-                winner = await self.play_move(game, main_index, sub_index)
-            except Exception as e:
-                await self.send(text_data=json.dumps({
-                    'type': 'error',
-                    'message': str(e)
-                }))
-                return
-
-            game_data = await self.get_game_data()
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    'type': 'move',
-                    'main_index': main_index,
-                    'sub_index': sub_index,
-                    'player': player,
-                    'next_player': game_data['next_player'],
-                    'winner': game_data['winner'],
-                    'active_index': game_data['active_index'],
-                    'time_x': game_data['time_x'],
-                    'time_o': game_data['time_o'],
-                }
-            )
-
-            if not game_data['winner']:
-                await self.start_timer_loop()
-
+            await self.handle_move(data)
         elif action == 'surrender':
-            surrendering_player = data.get('player')
-            winner = 'O' if surrendering_player == 'X' else 'X'
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    'type': 'surrender_game',
-                    'winner': winner,
-                    'message': f"{surrendering_player} surrendered. {winner} wins!",
-                }
-            )
-
+            await self.handle_surrender(data)
         elif action == 'replay_vote':
-            vote = data.get('vote')
-            await self.channel_layer.group_send(
-                self.group_name,
-                {
-                    'type': 'replay_vote',
-                    'from': data.get('from'),
-                    'vote': vote,
-                }
-            )
+            await self.handle_vote(data)
+
+    async def handle_move(self, data):
+        main_index = data.get('main_index')
+        sub_index = data.get('sub_index')
+        player = data.get('player')
+
+        game = await self.get_game()
+        if not game or game.winner:
+            return
+
+        try:
+            await self.play_move(game, main_index, sub_index)
+        except Exception as e:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': str(e)
+            }))
+            return
+
+        game_data = await self.get_game_data()
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'move',
+                'main_index': main_index,
+                'sub_index': sub_index,
+                'player': player,
+                'next_player': game_data['next_player'],
+                'winner': game_data['winner'],
+                'active_index': game_data['active_index'],
+                'time_x': game_data['time_x'],
+                'time_o': game_data['time_o'],
+            }
+        )
+
+        if not game_data['winner']:
+            await self.start_timer_loop()
+
+    async def handle_surrender(self, data):
+        surrendering_player = data.get('player')
+        winner = 'O' if surrendering_player == 'X' else 'X'
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'surrender_game',
+                'winner': winner,
+                'message': f"{surrendering_player} surrendered. {winner} wins!",
+            }
+        )
+
+    async def handle_vote(self, data):
+        player = data.get('from')
+        vote = data.get('vote')
+
+        if vote == 'yes':
+            self.vote_yes[player] = True
+        else:
+            self.vote_no[player] = True
+
+        await self.channel_layer.group_send(self.group_name, {
+            'type': 'replay_vote',
+            'from': player,
+            'vote': vote,
+        })
+
+        if self.vote_yes['X'] and self.vote_yes['O']:
+            await self.reset_full_game()
+            self.vote_yes = {'X': False, 'O': False}
+            self.vote_no = {'X': False, 'O': False}
+            await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
+            await self.start_timer_loop()
+        elif self.vote_no['X'] or self.vote_no['O']:
+            # A player declined to replay; don’t restart
+            self.vote_yes = {'X': False, 'O': False}
+            self.vote_no = {'X': False, 'O': False}
+            # No additional message needed—the frontend stays in result screen
+            pass
 
     async def start_timer_loop(self):
         if self.timer_task:
@@ -269,3 +288,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def create_subgames(self, game):
         game.create_subgames()
+
+    @database_sync_to_async
+    def reset_full_game(self):
+        game = Game.objects.get(room_code=self.room_code)
+        game.reset_state()
+        game.save()

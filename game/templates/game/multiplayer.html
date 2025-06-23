@@ -7,14 +7,16 @@
   <p style="color:red">{{ error }}</p>
 {% endif %}
 
-<form method="POST" action="{% url 'game:create_multiplayer' %}">
+<form method="POST" action="{% url 'game:create_multiplayer' %}" onsubmit="syncTimeValue()">
   {% csrf_token %}
-  <label for="time-input">Time per player (minutes):</label>
-  <select id="time-input" name="time" required>
-    {% for m in time_choices %}
-      <option value="{{ m }}">{{ m }} minute{{ m|pluralize }}</option>
-    {% endfor %}
-  </select>
+
+  <label>⏱ Time per player (minutes):</label>
+  <div style="display: flex; align-items: center; justify-content: center; margin: 10px 0;">
+    <button type="button" onclick="adjustTime(-1)" style="font-size: 24px; width: 40px;">−</button>
+    <span id="time-display" style="margin: 0 20px; font-size: 24px;">5</span>
+    <button type="button" onclick="adjustTime(1)" style="font-size: 24px; width: 40px;">＋</button>
+  </div>
+  <input type="hidden" name="time" id="time-input" value="5">
   <button type="submit" class="button">Create Game</button>
 </form>
 
@@ -29,4 +31,20 @@
 
 <br>
 <a href="{% url 'game:main_menu' %}" class="back-link">Back</a>
+
+<script>
+  let currentTime = 5;
+  const minTime = 1;
+  const maxTime = 10;
+
+  function adjustTime(change) {
+    currentTime = Math.min(maxTime, Math.max(minTime, currentTime + change));
+    document.getElementById('time-display').textContent = currentTime;
+    document.getElementById('time-input').value = currentTime;
+  }
+
+  function syncTimeValue() {
+    document.getElementById('time-input').value = currentTime;
+  }
+</script>
 {% endblock %}

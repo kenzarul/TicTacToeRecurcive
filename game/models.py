@@ -19,7 +19,7 @@ class Game(models.Model):
     last_player = models.CharField(max_length=1, null=True, blank=True)
 
     # Timer fields
-    time_x = models.IntegerField(default=300)  # total time in seconds
+    time_x = models.IntegerField(default=300)
     time_o = models.IntegerField(default=300)
     remaining_x = models.IntegerField(default=300)
     remaining_o = models.IntegerField(default=300)
@@ -65,15 +65,15 @@ class Game(models.Model):
 
         now = timezone.now()
         if self.last_move_time:
-            time_diff = int((now - self.last_move_time).total_seconds())
+            elapsed = int((now - self.last_move_time).total_seconds())
             if self.last_player == 'X':
-                self.remaining_x = max(0, self.remaining_x - time_diff)
+                self.remaining_x = max(0, self.remaining_x - elapsed)
                 if self.remaining_x <= 0:
                     self.winner = 'O'
                     self.save()
                     return self.winner
             elif self.last_player == 'O':
-                self.remaining_o = max(0, self.remaining_o - time_diff)
+                self.remaining_o = max(0, self.remaining_o - elapsed)
                 if self.remaining_o <= 0:
                     self.winner = 'X'
                     self.save()
@@ -111,7 +111,7 @@ class Game(models.Model):
 
         self.set_active_index(sub_index)
         self.save()
-        self.is_game_over  # Trigger global win check
+        self.is_game_over  # Trigger win check
         return winner
 
     def set_active_index(self, index):
@@ -120,6 +120,7 @@ class Game(models.Model):
     def create_subgames(self):
         if not self.player_x or not self.player_o:
             raise ValueError("Cannot create subgames without both player_x and player_o")
+        self.sub_games.all().delete()
         for i in range(9):
             SubGame.objects.create(
                 game=self,
@@ -127,10 +128,13 @@ class Game(models.Model):
                 player_x=self.player_x,
                 player_o=self.player_o
             )
+        self.board = " " * 9
         self.last_player = None
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()
+        self.winner = None
+        self.active_index = None
         self.save()
 
     def play_auto(self):
@@ -139,7 +143,6 @@ class Game(models.Model):
             player = self.player_x if next_symbol == 'X' else self.player_o
             if player == 'human':
                 return
-
             from game.players import get_player
             player_obj = get_player(player)
             main_index = self.active_index if self.active_index is not None else random.choice(
@@ -147,6 +150,19 @@ class Game(models.Model):
             sub_game = self.sub_games.filter(index=main_index).first()
             sub_index = player_obj.play(sub_game, next_symbol)
             self.play(main_index, sub_index, next_symbol)
+
+    def reset_state(self):
+        self.board = " " * 9
+        self.last_main_index = None
+        self.last_sub_index = None
+        self.winner = None
+        self.last_player = None
+        self.active_index = None
+        self.remaining_x = self.time_x
+        self.remaining_o = self.time_o
+        self.last_move_time = timezone.now()
+        self.create_subgames()
+        self.save()
 
 
 class SubGame(models.Model):
@@ -201,7 +217,6 @@ class SubGame(models.Model):
             player = self.player_x if next_symbol == 'X' else self.player_o
             if player == 'human':
                 return
-
             from game.players import get_player
             player_obj = get_player(player)
             sub_index = player_obj.play(self, next_symbol)

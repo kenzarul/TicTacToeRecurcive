@@ -71,11 +71,9 @@ function copyCode() {
 }
 
 let myPlayer = null;
-let votes = {'X': false, 'O': false};
-let timer = {
-  X: {{ game.time_x|default:300 }},
-  O: {{ game.time_o|default:300 }}
-};
+let votes = { X: false, O: false };
+let voteCount = 0;
+let timer = { X: 300, O: 300 };
 let interval = null;
 
 function formatTime(seconds) {
@@ -85,7 +83,6 @@ function formatTime(seconds) {
 }
 
 function updateTimers() {
-  if (!myPlayer) return;
   const turn = document.getElementById("current-turn").textContent;
   if (turn === 'X' || turn === 'O') {
     timer[turn]--;
@@ -98,12 +95,12 @@ function updateTimers() {
 }
 
 const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
+
 socket.onopen = () => console.log("WebSocket connected");
 
 socket.onmessage = e => {
   const data = JSON.parse(e.data);
-
-  switch(data.type) {
+  switch (data.type) {
     case 'player_assignment':
       myPlayer = data.player;
       document.getElementById("assigned-player").textContent = myPlayer;
@@ -113,26 +110,25 @@ socket.onmessage = e => {
       document.getElementById("waiting-room").style.display = 'none';
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
-      document.getElementById("opponent-name").textContent =
-        (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
-      document.getElementById("current-turn").textContent = data.next_player;
+      document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
+      timer.X = data.time_x;
+      timer.O = data.time_o;
       document.getElementById("timer-x").textContent = formatTime(timer.X);
       document.getElementById("timer-o").textContent = formatTime(timer.O);
       if (interval) clearInterval(interval);
       interval = setInterval(updateTimers, 1000);
+      document.getElementById("current-turn").textContent = data.next_player;
       break;
 
     case 'move':
-      {
-        const sq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);
-        if (sq) {
-          sq.textContent = data.player;
-          sq.style.pointerEvents = 'none';
-        }
-        document.getElementById("current-turn").textContent = data.next_player;
-        highlightActive(data.active_index);
-        if (data.winner) showResult(data.winner, data.winner === ' ' ? "Draw!" : `${data.winner} wins!`);
+      const sq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);
+      if (sq) {
+        sq.textContent = data.player;
+        sq.style.pointerEvents = 'none';
       }
+      document.getElementById("current-turn").textContent = data.next_player;
+      highlightActive(data.active_index);
+      if (data.winner) showResult(data.winner, data.winner === ' ' ? "Draw!" : `${data.winner} wins!`);
       break;
 
     case 'surrender':
@@ -140,7 +136,7 @@ socket.onmessage = e => {
       break;
 
     case 'replay_vote':
-      votes[data.from] = (data.vote === 'yes');
+      votes[data.from] = data.vote === 'yes';
       updateVotesUI();
       break;
 
@@ -174,21 +170,23 @@ document.getElementById("replay-btn").onclick = () => {
   resetGameUI();
   sendVote(true);
 };
-document.getElementById("exit-btn").onclick = () =>
-  window.location.href = "{% url 'game:main_menu' %}";
+document.getElementById("exit-btn").onclick = () => window.location.href = "{% url 'game:main_menu' %}";
 
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
     board.style.boxShadow = (i === idx) ? "0 0 10px 4px #3b82f6" : "none";
   });
 }
+
 function showResult(winner, msg) {
   document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
   document.getElementById("resultMessage").textContent = msg;
   document.getElementById("gameResultModal").style.display = 'block';
   animateResult(winner !== myPlayer);
   if (interval) clearInterval(interval);
+  document.getElementById("vote-panel").style.display = 'block';
 }
+
 function animateResult(isLoss) {
   const container = document.querySelector('.confetti-container');
   container.innerHTML = '';
@@ -210,17 +208,22 @@ function animateResult(isLoss) {
     }
     document.getElementById("confettiSound").play().catch(() => {});
   }
-  document.getElementById("vote-panel").style.display = 'block';
 }
+
 function sendVote(v) {
   socket.send(JSON.stringify({ action: 'replay_vote', from: myPlayer, vote: v ? 'yes' : 'no' }));
+  if (!v) {
+    setTimeout(() => window.location.href = "{% url 'game:main_menu' %}", 500);
+  }
 }
+
 function updateVotesUI() {
   document.getElementById("vote-status").innerText =
-    `Votes — X: ${votes.X ? '✔' : '✘'} O: ${votes.O ? '✔' : '✘'}`;
+    `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
   if (votes.X && votes.O) location.reload();
   else document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
 }
+
 function resetGameUI() {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.textContent = '';
@@ -228,8 +231,7 @@ function resetGameUI() {
   });
   document.getElementById("gameResultModal").style.display = 'none';
   document.getElementById("vote-panel").style.display = 'none';
-  votes = {'X': false, 'O': false};
+  votes = { X: false, O: false };
 }
 </script>
-
 {% endblock %}

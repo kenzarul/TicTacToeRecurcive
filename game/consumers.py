@@ -4,6 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
 
+
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_code = self.scope['url_route']['kwargs']['room_code']
@@ -143,11 +144,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
             await self.start_timer_loop()
         elif self.vote_no['X'] or self.vote_no['O']:
-            # A player declined to replay; don’t restart
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
-            # No additional message needed—the frontend stays in result screen
-            pass
+            # Replay canceled; frontend handles this by staying in result screen
 
     async def start_timer_loop(self):
         if self.timer_task:
@@ -292,5 +291,6 @@ class GameConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def reset_full_game(self):
         game = Game.objects.get(room_code=self.room_code)
-        game.reset_state()
+        game.reset_state()  # Assumes you implemented this in your Game model
+        game.create_subgames()
         game.save()

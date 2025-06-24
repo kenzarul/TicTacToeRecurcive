@@ -33,13 +33,12 @@
 <div id="game-board" style="display:none; width:650px; margin:auto; display:grid; grid-template-columns:repeat(3,1fr); gap:5px;">
   {% for big in "012345678" %}
     <div class="big-board" data-board-index="{{ big }}"
-         style="display:grid; grid-template-columns:repeat(3,1fr); width:200px; height:200px; border:2px solid #333;">
+         style="display:grid; grid-template-columns:repeat(3,1fr); width:200px; height:200px; border:2px solid #333; transition: box-shadow 0.3s ease;">
       {% for small in "012345678" %}
         <div class="small-square"
              data-main="{{ big }}" data-sub="{{ small }}"
              style="border:1px solid #999; display:flex;
-                    align-items:center; justify-content:center; font-size:24px; cursor:pointer;
-                    background:#f9f9f9;">
+                    align-items:center; justify-content:center; font-size:24px; cursor:pointer;">
         </div>
       {% endfor %}
     </div>
@@ -72,9 +71,10 @@ function copyCode() {
 
 let myPlayer = null;
 let votes = { X: false, O: false };
-let voteCount = 0;
 let timer = { X: 300, O: 300 };
 let interval = null;
+let currentActive = null;
+let subgameWinners = Array(9).fill(null);
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -94,9 +94,33 @@ function updateTimers() {
   }
 }
 
-const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
+function updateSquareColors(turn) {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    if (!sq.textContent) {
+      sq.style.backgroundColor = '';
+    }
+  });
+  if (currentActive !== null) {
+    const targetBig = document.querySelector(`.big-board[data-board-index='${currentActive}']`);
+    if (targetBig && subgameWinners[currentActive] === null) {
+      targetBig.querySelectorAll('.small-square').forEach(sq => {
+        if (!sq.textContent)
+          sq.style.backgroundColor = turn === 'X' ? '#ffcaca' : '#ccffcc';
+      });
+    } else {
+      document.querySelectorAll('.big-board').forEach((big, idx) => {
+        if (subgameWinners[idx] === null) {
+          big.querySelectorAll('.small-square').forEach(sq => {
+            if (!sq.textContent)
+              sq.style.backgroundColor = turn === 'X' ? '#ffcaca' : '#ccffcc';
+          });
+        }
+      });
+    }
+  }
+}
 
-socket.onopen = () => console.log("WebSocket connected");
+const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
 
 socket.onmessage = e => {
   const data = JSON.parse(e.data);
@@ -118,6 +142,8 @@ socket.onmessage = e => {
       if (interval) clearInterval(interval);
       interval = setInterval(updateTimers, 1000);
       document.getElementById("current-turn").textContent = data.next_player;
+      resetGameUI();
+      updateSquareColors(data.next_player);
       break;
 
     case 'move':
@@ -125,9 +151,15 @@ socket.onmessage = e => {
       if (sq) {
         sq.textContent = data.player;
         sq.style.pointerEvents = 'none';
+        sq.style.color = data.player === 'X' ? 'red' : 'green';
       }
+      if (data.winner) {
+        subgameWinners[data.main_index] = data.player;
+      }
+      currentActive = data.active_index;
       document.getElementById("current-turn").textContent = data.next_player;
       highlightActive(data.active_index);
+      updateSquareColors(data.next_player);
       if (data.winner) showResult(data.winner, data.winner === ' ' ? "Draw!" : `${data.winner} wins!`);
       break;
 
@@ -150,10 +182,17 @@ document.querySelectorAll(".small-square").forEach(sq => {
   sq.onclick = () => {
     if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent)
       return alert("Wait your turn");
+    const mainIdx = parseInt(sq.dataset.main);
+    if (currentActive !== null && mainIdx !== currentActive && subgameWinners[currentActive] === null) {
+      return alert("You must play in the active subgrid!");
+    }
+    if (subgameWinners[mainIdx] !== null) {
+      return alert("This subgrid has already been won!");
+    }
     socket.send(JSON.stringify({
       action: 'move',
       player: myPlayer,
-      main_index: parseInt(sq.dataset.main),
+      main_index: mainIdx,
       sub_index: parseInt(sq.dataset.sub)
     }));
   };
@@ -170,11 +209,18 @@ document.getElementById("replay-btn").onclick = () => {
   resetGameUI();
   sendVote(true);
 };
-document.getElementById("exit-btn").onclick = () => window.location.href = "{% url 'game:main_menu' %}";
+document.getElementById("exit-btn").onclick = () =>
+  window.location.href = "{% url 'game:main_menu' %}";
 
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
-    board.style.boxShadow = (i === idx) ? "0 0 10px 4px #3b82f6" : "none";
+    if (i === idx && subgameWinners[i] === null) {
+      board.style.boxShadow = idx !== null ? (document.getElementById("current-turn").textContent === 'X' ? '0 0 10px 4px red' : '0 0 10px 4px green') : "none";
+    } else if (idx === null && subgameWinners[i] === null) {
+      board.style.boxShadow = document.getElementById("current-turn").textContent === 'X' ? '0 0 10px 4px red' : '0 0 10px 4px green';
+    } else {
+      board.style.boxShadow = "none";
+    }
   });
 }
 
@@ -220,18 +266,27 @@ function sendVote(v) {
 function updateVotesUI() {
   document.getElementById("vote-status").innerText =
     `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
-  if (votes.X && votes.O) location.reload();
-  else document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
+  if (votes.X && votes.O) {
+    document.getElementById("vote-status").innerText += " — Restarting game...";
+  } else {
+    document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
+  }
 }
 
 function resetGameUI() {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.textContent = '';
     sq.style.pointerEvents = 'auto';
+    sq.style.backgroundColor = '#f9f9f9';
+    sq.style.color = '';
   });
+  subgameWinners = Array(9).fill(null);
+  currentActive = null;
   document.getElementById("gameResultModal").style.display = 'none';
   document.getElementById("vote-panel").style.display = 'none';
   votes = { X: false, O: false };
+  document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
 }
 </script>
+
 {% endblock %}

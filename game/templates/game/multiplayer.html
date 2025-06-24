@@ -1,38 +1,60 @@
 {% extends "base.html" %}
-
 {% block body %}
-<h1>Multiplayer</h1>
+
+<h1 style="text-align: center;">Ultimate Tic Tac Toe – Multiplayer</h1>
 
 {% if error %}
-  <p style="color:red">{{ error }}</p>
+  <p style="color: red; text-align: center;">{{ error }}</p>
 {% endif %}
 
-<form method="POST" action="{% url 'game:create_multiplayer' %}" onsubmit="syncTimeValue()">
-  {% csrf_token %}
+<!-- CREATE GAME FORM -->
+<div style="max-width: 400px; margin: 30px auto;">
+  <form method="POST" action="{% url 'game:create_multiplayer' %}" onsubmit="syncTimeValue()"
+        style="border: 2px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+    {% csrf_token %}
+    <h3 style="text-align:center;">🎮 Create Game</h3>
 
-  <label>⏱ Time per player (minutes):</label>
-  <div style="display: flex; align-items: center; justify-content: center; margin: 10px 0;">
-    <button type="button" onclick="adjustTime(-1)" style="font-size: 24px; width: 40px;">−</button>
-    <span id="time-display" style="margin: 0 20px; font-size: 24px;">5</span>
-    <button type="button" onclick="adjustTime(1)" style="font-size: 24px; width: 40px;">＋</button>
-  </div>
-  <input type="hidden" name="time" id="time-input" value="5">
-  <button type="submit" class="button">Create Game</button>
-</form>
+    <label for="time" style="font-weight: bold;">⏱ Time per player (minutes):</label>
+    <div style="display: flex; align-items: center; justify-content: center; margin: 10px 0;">
+      <button type="button" onclick="adjustTime(-1)" style="font-size: 24px; width: 40px;">−</button>
+      <span id="time-display" style="margin: 0 20px; font-size: 24px;">5</span>
+      <button type="button" onclick="adjustTime(1)" style="font-size: 24px; width: 40px;">＋</button>
+    </div>
 
-<hr>
+    <input type="hidden" name="time" id="time-input" value="5">
 
-<form method="POST" action="{% url 'game:join_multiplayer' %}">
-  {% csrf_token %}
-  <label for="code-input">Enter Code:</label>
-  <input type="text" id="code-input" name="code" required maxlength="6" style="text-transform:uppercase">
-  <button type="submit" class="button">Join Game</button>
-</form>
+    <div style="text-align: center; margin-top: 20px;">
+      <button type="submit" class="button">Create Game</button>
+    </div>
+  </form>
+</div>
 
-<br>
-<a href="{% url 'game:main_menu' %}" class="back-link">Back</a>
+<hr style="margin: 40px 0;">
+
+<!-- JOIN GAME FORM -->
+<div style="max-width: 400px; margin: auto;">
+  <form method="POST" action="{% url 'game:join_multiplayer' %}"
+        style="border: 2px solid #ddd; padding: 20px; border-radius: 10px; background-color: #f9f9f9;">
+    {% csrf_token %}
+    <h3 style="text-align:center;">🔗 Join Game</h3>
+
+    <label for="code-input" style="font-weight: bold;">Enter Code:</label>
+    <input type="text" id="code-input" name="code" required maxlength="6"
+           style="text-transform: uppercase; width: 140px; font-size: 20px; text-align: center; margin: 10px auto; display: block;">
+
+    <div style="text-align: center;">
+      <button type="submit" class="button">Join Game</button>
+    </div>
+  </form>
+</div>
+
+<!-- BACK LINK -->
+<div style="text-align: center; margin-top: 40px;">
+  <a href="{% url 'game:main_menu' %}" class="back-link">← Back to Main Menu</a>
+</div>
 
 <script>
+  // Timer logic
   let currentTime = 5;
   const minTime = 1;
   const maxTime = 10;
@@ -47,4 +69,5 @@
     document.getElementById('time-input').value = currentTime;
   }
 </script>
+
 {% endblock %}

@@ -71,6 +71,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.handle_surrender(data)
         elif action == 'replay_vote':
             await self.handle_vote(data)
+        elif action == 'restart_game':
+            await self.handle_restart()
 
     async def handle_move(self, data):
         main_index = data.get('main_index')
@@ -148,11 +150,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.reset_full_game()
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
-            await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
-            await self.start_timer_loop()
+            await self.channel_layer.group_send(self.group_name, {'type': 'restart_game'})
         elif self.vote_no['X'] or self.vote_no['O']:
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
+
+    async def handle_restart(self):
+        await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
+        await self.start_timer_loop()
 
     async def start_timer_loop(self):
         if self.timer_task:
@@ -219,6 +224,11 @@ class GameConsumer(AsyncWebsocketConsumer):
             'type': 'replay_vote',
             'from': event['from'],
             'vote': event['vote'],
+        }))
+
+    async def restart_game(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'restart'
         }))
 
     async def update_timers(self, event):

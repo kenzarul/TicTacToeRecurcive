@@ -89,12 +89,6 @@
     <div>⏱ O: <span id="timer-o">0:00</span></div>
   </div>
   <button id="surrender-btn" style="padding:8px 16px; font-size:16px; margin-top:10px;">🚩 Surrender</button>
-  <div id="vote-panel" style="display:none; margin-top:10px;">
-    <span>Replay? </span>
-    <button id="vote-yes">👍 Yes</button>
-    <button id="vote-no">👎 No</button>
-    <p id="vote-status"></p>
-  </div>
 </div>
 
 <!-- GAME BOARD -->
@@ -115,7 +109,7 @@
   {% endfor %}
 </div>
 
-<!-- MODAL -->
+<!-- RESULT MODAL -->
 <div id="gameResultModal" class="modal" style="display:none;">
   <div class="modal-content">
     <h2 id="resultTitle"></h2>
@@ -124,71 +118,26 @@
     <audio id="confettiSound" preload="auto">
       <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
     </audio>
-    <button id="replay-btn" class="modal-btn" style="display:none;">Play Again</button>
     <button id="exit-btn" class="modal-btn">Exit</button>
+    <div id="replay-vote" style="margin-top: 20px;">
+      <p style="margin-bottom: 5px;">Play again?</p>
+      <button id="vote-yes" class="modal-btn">👍 Yes</button>
+      <button id="vote-no" class="modal-btn">👎 No</button>
+      <p id="vote-status" style="margin-top: 10px;"></p>
+      <p id="countdown-timer" style="margin-top: 5px; font-size: 14px;">Auto exit in 60s</p>
+    </div>
   </div>
 </div>
 
 <script>
-function copyCode() {
-  navigator.clipboard.writeText(document.getElementById("room-code").textContent);
-  alert("Room code copied!");
-}
-
 let myPlayer = null;
 let votes = { X: false, O: false };
+let countdown = 60;
+let countdownInterval = null;
 let timer = { X: 300, O: 300 };
 let interval = null;
 let currentActive = null;
 let subgameWinners = Array(9).fill(null);
-
-function formatTime(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function updateTimers() {
-  const turn = document.getElementById("current-turn").textContent;
-  if (turn === 'X' || turn === 'O') {
-    timer[turn]--;
-    document.getElementById(`timer-${turn.toLowerCase()}`).textContent = formatTime(timer[turn]);
-    if (timer[turn] <= 0) {
-      clearInterval(interval);
-      showResult(turn === 'X' ? 'O' : 'X', `${turn} ran out of time!`);
-    }
-  }
-}
-
-function highlightActive(idx) {
-  document.querySelectorAll(".big-board").forEach((board, i) => {
-    const subSquares = board.querySelectorAll('.small-square');
-    const isActive = (idx === i || idx === null) && subgameWinners[i] === null;
-    subSquares.forEach(sq => {
-      if (!sq.textContent) {
-        sq.style.backgroundColor = isActive
-          ? (document.getElementById("current-turn").textContent === 'X' ? '#ffcaca' : '#ccffcc')
-          : '#f9f9f9';
-      }
-    });
-  });
-}
-
-function resetGameUI() {
-  document.querySelectorAll(".small-square").forEach(sq => {
-    sq.textContent = '';
-    sq.style.pointerEvents = 'auto';
-    sq.style.backgroundColor = '#f9f9f9';
-    sq.style.color = '';
-  });
-  subgameWinners = Array(9).fill(null);
-  currentActive = null;
-  document.getElementById("gameResultModal").style.display = 'none';
-  document.getElementById("vote-panel").style.display = 'none';
-  votes = { X: false, O: false };
-  document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
-  document.querySelectorAll(".big-overlay").forEach(el => el.remove());
-}
 
 const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
 
@@ -248,25 +197,15 @@ socket.onmessage = e => {
       votes[data.from] = data.vote === 'yes';
       updateVotesUI();
       break;
+    case 'restart':
+      location.reload();
+      break;
     case 'error':
       alert(data.message);
       break;
   }
 };
 
-document.querySelectorAll(".small-square").forEach(sq => {
-  sq.onclick = () => {
-    if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent)
-      return alert("Wait your turn");
-    const main = parseInt(sq.dataset.main);
-    const sub = parseInt(sq.dataset.sub);
-    if (subgameWinners[main] !== null) return alert("This subgrid is already won.");
-    if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null)
-      return alert("You must play in the highlighted subgrid.");
-    if (sq.textContent) return;
-    socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
-  };
-});
 
 document.getElementById("surrender-btn").onclick = () => {
   if (!myPlayer) return;
@@ -279,20 +218,117 @@ document.getElementById("exit-btn").onclick = () => {
   window.location.href = "{% url 'game:main_menu' %}";
 };
 
+document.getElementById("vote-yes").onclick = () => {
+  socket.send(JSON.stringify({ action: 'replay_vote', vote: 'yes', from: myPlayer }));
+  disableVoteButtons();
+};
+
+document.getElementById("vote-no").onclick = () => {
+  socket.send(JSON.stringify({ action: 'replay_vote', vote: 'no', from: myPlayer }));
+  disableVoteButtons();
+  clearInterval(countdownInterval);
+  document.getElementById("vote-status").textContent = "You declined. Returning to menu...";
+  setTimeout(() => {
+    window.location.href = "{% url 'game:main_menu' %}";
+  }, 3000);
+};
+
+function disableVoteButtons() {
+  document.getElementById("vote-yes").disabled = true;
+  document.getElementById("vote-no").disabled = true;
+}
+
+function startCountdown() {
+  countdown = 60;
+  document.getElementById("countdown-timer").textContent = `Auto exit in ${countdown}s`;
+  countdownInterval = setInterval(() => {
+    countdown--;
+    document.getElementById("countdown-timer").textContent = `Auto exit in ${countdown}s`;
+    if (countdown <= 0) {
+      clearInterval(countdownInterval);
+      document.getElementById("vote-status").textContent = "No response. Exiting...";
+      setTimeout(() => {
+        window.location.href = "{% url 'game:main_menu' %}";
+      }, 2000);
+    }
+  }, 1000);
+}
+
+function updateVotesUI() {
+  document.getElementById("vote-status").innerText = `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
+  if (votes.X && votes.O) {
+    clearInterval(countdownInterval);
+    document.getElementById("vote-status").innerText += " — Restarting game...";
+    setTimeout(() => {
+      socket.send(JSON.stringify({ action: 'restart_game' }));
+    }, 2000);
+  }
+}
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function updateTimers() {
+  const turn = document.getElementById("current-turn").textContent;
+  if (turn === 'X' || turn === 'O') {
+    timer[turn]--;
+    document.getElementById(`timer-${turn.toLowerCase()}`).textContent = formatTime(timer[turn]);
+    if (timer[turn] <= 0) {
+      clearInterval(interval);
+      showResult(turn === 'X' ? 'O' : 'X', `${turn} ran out of time!`);
+    }
+  }
+}
+
+function resetGameUI() {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    sq.textContent = '';
+    sq.style.pointerEvents = 'auto';
+    sq.style.backgroundColor = '#f9f9f9';
+    sq.style.color = '';
+    sq.onclick = () => {
+      if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent) return alert("Wait your turn");
+      const main = parseInt(sq.dataset.main);
+      const sub = parseInt(sq.dataset.sub);
+      if (subgameWinners[main] !== null) return alert("This subgrid is already won.");
+      if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null)
+        return alert("You must play in the highlighted subgrid.");
+      if (sq.textContent) return alert("Square already played");
+      socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+    };
+  });
+  subgameWinners = Array(9).fill(null);
+  currentActive = null;
+  document.getElementById("gameResultModal").style.display = 'none';
+  document.getElementById("vote-status").textContent = "";
+  votes = { X: false, O: false };
+  document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
+  document.querySelectorAll(".big-overlay").forEach(el => el.remove());
+}
+
+
+function highlightActive(idx) {
+  document.querySelectorAll(".big-board").forEach((board, i) => {
+    const subSquares = board.querySelectorAll('.small-square');
+    const isActive = (idx === i || idx === null) && subgameWinners[i] === null;
+    subSquares.forEach(sq => {
+      if (!sq.textContent) {
+        sq.style.backgroundColor = isActive
+          ? (document.getElementById("current-turn").textContent === 'X' ? '#ffcaca' : '#ccffcc')
+          : '#f9f9f9';
+      }
+    });
+  });
+}
+
 function updateSquareColors(turn) {
   document.querySelectorAll(".small-square").forEach(sq => {
     if (!sq.textContent) sq.style.backgroundColor = '#f9f9f9';
   });
   highlightActive(currentActive);
-}
-
-function showResult(winner, msg) {
-  document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
-  document.getElementById("resultMessage").textContent = msg;
-  document.getElementById("gameResultModal").style.display = 'flex';
-  animateResult(winner !== myPlayer);
-  if (interval) clearInterval(interval);
-  document.getElementById("vote-panel").style.display = 'block';
 }
 
 function animateResult(isLoss) {
@@ -318,14 +354,24 @@ function animateResult(isLoss) {
   }
 }
 
-function updateVotesUI() {
-  document.getElementById("vote-status").innerText = `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
-  if (votes.X && votes.O) {
-    document.getElementById("vote-status").innerText += " — Restarting game...";
-  } else {
-    document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
-  }
-}
-</script>
+function showResult(winner, msg) {
+  document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
+  document.getElementById("resultMessage").textContent = msg;
+  document.getElementById("gameResultModal").style.display = 'flex';
+  animateResult(winner !== myPlayer);
+  if (interval) clearInterval(interval);
+  document.getElementById("replay-vote").style.display = 'block';
 
+  document.getElementById("vote-yes").disabled = false;
+  document.getElementById("vote-no").disabled = false;
+  document.getElementById("vote-status").textContent = "";
+  startCountdown();
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(document.getElementById("room-code").textContent);
+  alert("Room code copied!");
+}
+
+</script>
 {% endblock %}

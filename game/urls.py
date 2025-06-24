@@ -9,6 +9,7 @@ urlpatterns = [
     # Main menus
     path('', views.main_menu, name='main_menu'),
     path('guest/', views.main_menu_guest, name='main_menu_guest'),
+    path('how-to-play/', views.how_to_play, name='how_to_play'),
 
     # Single player
     path('single/', views.single_player, name='single_player'),

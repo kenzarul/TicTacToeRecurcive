@@ -1,7 +1,75 @@
 {% extends "base.html" %}
 {% block body %}
 
-<!-- Waiting Room -->
+<style>
+  .big-overlay {
+    position: absolute;
+    font-size: 140px;
+    font-weight: bold;
+    color: rgba(255, 0, 0, 0.4);
+    z-index: 2;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .big-overlay.x {
+    color: rgba(0, 0, 255, 0.4);
+  }
+
+  .modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-content {
+    background: linear-gradient(135deg, #3b82f6, #ec4899);
+    padding: 30px 40px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+    max-width: 90%;
+  }
+
+  .modal-btn {
+    padding: 10px 18px;
+    margin: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    background: linear-gradient(45deg, red, orange);
+  }
+
+  .modal-btn:hover {
+    background: linear-gradient(45deg, #ff6b6b, #ffa726);
+  }
+
+  .confetti, .rain-drop {
+    position: absolute;
+    animation: fall 3s linear infinite;
+  }
+
+  @keyframes fall {
+    to {
+      transform: translateY(100vh);
+      opacity: 0;
+    }
+  }
+</style>
+
+<!-- WAITING ROOM -->
 <div id="waiting-room" style="text-align:center; margin-top:30px;">
   <h2>Ultimate Tic Tac Toe – Multiplayer</h2>
   <p><strong>Room Code:</strong> <span id="room-code">{{ game.room_code }}</span>
@@ -10,7 +78,7 @@
   <h3>⏳ Waiting for another player to join...</h3>
 </div>
 
-<!-- Game Info Panel -->
+<!-- INFO PANEL -->
 <div id="info-panel" style="display:none; text-align:center; margin-bottom:20px;">
   <h2>Ultimate Tic Tac Toe – Multiplayer</h2>
   <p><strong>You:</strong> <span id="assigned-player">?</span> &nbsp; | &nbsp;
@@ -29,37 +97,35 @@
   </div>
 </div>
 
-<!-- Game Board -->
+<!-- GAME BOARD -->
 <div id="game-board" style="display:none; width:650px; margin:auto; display:grid; grid-template-columns:repeat(3,1fr); gap:5px;">
   {% for big in "012345678" %}
-    <div class="big-board" data-board-index="{{ big }}"
-         style="display:grid; grid-template-columns:repeat(3,1fr); width:200px; height:200px; border:2px solid #333; transition: box-shadow 0.3s ease;">
-      {% for small in "012345678" %}
-        <div class="small-square"
-             data-main="{{ big }}" data-sub="{{ small }}"
-             style="border:1px solid #999; display:flex;
-                    align-items:center; justify-content:center; font-size:24px; cursor:pointer;">
-        </div>
-      {% endfor %}
+    <div class="big-board-container" style="position:relative;">
+      <div class="big-board" data-board-index="{{ big }}"
+           style="display:grid; grid-template-columns:repeat(3,1fr); width:200px; height:200px; border:2px solid #333;">
+        {% for small in "012345678" %}
+          <div class="small-square"
+               data-main="{{ big }}" data-sub="{{ small }}"
+               style="border:1px solid #999; display:flex;
+                      align-items:center; justify-content:center; font-size:24px; cursor:pointer; background-color:#f9f9f9;">
+          </div>
+        {% endfor %}
+      </div>
     </div>
   {% endfor %}
 </div>
 
-<!-- Modal Result -->
+<!-- MODAL -->
 <div id="gameResultModal" class="modal" style="display:none;">
   <div class="modal-content">
-    <div class="modal-header"><h2 id="resultTitle"></h2></div>
-    <div class="modal-body">
-      <p id="resultMessage"></p>
-      <div class="confetti-container"></div>
-    </div>
+    <h2 id="resultTitle"></h2>
+    <p id="resultMessage"></p>
+    <div class="confetti-container"></div>
     <audio id="confettiSound" preload="auto">
       <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
     </audio>
-    <div class="modal-footer">
-      <button id="replay-btn" class="modal-btn new-game" style="display:none">Play Again</button>
-      <button id="exit-btn" class="modal-btn exit">Exit</button>
-    </div>
+    <button id="replay-btn" class="modal-btn" style="display:none;">Play Again</button>
+    <button id="exit-btn" class="modal-btn">Exit</button>
   </div>
 </div>
 
@@ -94,183 +160,18 @@ function updateTimers() {
   }
 }
 
-function updateSquareColors(turn) {
-  document.querySelectorAll(".small-square").forEach(sq => {
-    if (!sq.textContent) {
-      sq.style.backgroundColor = '';
-    }
-  });
-  if (currentActive !== null) {
-    const targetBig = document.querySelector(`.big-board[data-board-index='${currentActive}']`);
-    if (targetBig && subgameWinners[currentActive] === null) {
-      targetBig.querySelectorAll('.small-square').forEach(sq => {
-        if (!sq.textContent)
-          sq.style.backgroundColor = turn === 'X' ? '#ffcaca' : '#ccffcc';
-      });
-    } else {
-      document.querySelectorAll('.big-board').forEach((big, idx) => {
-        if (subgameWinners[idx] === null) {
-          big.querySelectorAll('.small-square').forEach(sq => {
-            if (!sq.textContent)
-              sq.style.backgroundColor = turn === 'X' ? '#ffcaca' : '#ccffcc';
-          });
-        }
-      });
-    }
-  }
-}
-
-const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
-
-socket.onmessage = e => {
-  const data = JSON.parse(e.data);
-  switch (data.type) {
-    case 'player_assignment':
-      myPlayer = data.player;
-      document.getElementById("assigned-player").textContent = myPlayer;
-      break;
-
-    case 'start':
-      document.getElementById("waiting-room").style.display = 'none';
-      document.getElementById("info-panel").style.display = 'block';
-      document.getElementById("game-board").style.display = 'grid';
-      document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
-      timer.X = data.time_x;
-      timer.O = data.time_o;
-      document.getElementById("timer-x").textContent = formatTime(timer.X);
-      document.getElementById("timer-o").textContent = formatTime(timer.O);
-      if (interval) clearInterval(interval);
-      interval = setInterval(updateTimers, 1000);
-      document.getElementById("current-turn").textContent = data.next_player;
-      resetGameUI();
-      updateSquareColors(data.next_player);
-      break;
-
-    case 'move':
-      const sq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);
-      if (sq) {
-        sq.textContent = data.player;
-        sq.style.pointerEvents = 'none';
-        sq.style.color = data.player === 'X' ? 'red' : 'green';
-      }
-      if (data.winner) {
-        subgameWinners[data.main_index] = data.player;
-      }
-      currentActive = data.active_index;
-      document.getElementById("current-turn").textContent = data.next_player;
-      highlightActive(data.active_index);
-      updateSquareColors(data.next_player);
-      if (data.winner) showResult(data.winner, data.winner === ' ' ? "Draw!" : `${data.winner} wins!`);
-      break;
-
-    case 'surrender':
-      showResult(data.winner, `${data.winner} wins by surrender!`);
-      break;
-
-    case 'replay_vote':
-      votes[data.from] = data.vote === 'yes';
-      updateVotesUI();
-      break;
-
-    case 'error':
-      alert(data.message);
-      break;
-  }
-};
-
-document.querySelectorAll(".small-square").forEach(sq => {
-  sq.onclick = () => {
-    if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent)
-      return alert("Wait your turn");
-    const mainIdx = parseInt(sq.dataset.main);
-    if (currentActive !== null && mainIdx !== currentActive && subgameWinners[currentActive] === null) {
-      return alert("You must play in the active subgrid!");
-    }
-    if (subgameWinners[mainIdx] !== null) {
-      return alert("This subgrid has already been won!");
-    }
-    socket.send(JSON.stringify({
-      action: 'move',
-      player: myPlayer,
-      main_index: mainIdx,
-      sub_index: parseInt(sq.dataset.sub)
-    }));
-  };
-});
-
-document.getElementById("surrender-btn").onclick = () => {
-  if (confirm("Are you sure you want to surrender?"))
-    socket.send(JSON.stringify({ action: 'surrender', player: myPlayer }));
-};
-
-document.getElementById("vote-yes").onclick = () => sendVote(true);
-document.getElementById("vote-no").onclick = () => sendVote(false);
-document.getElementById("replay-btn").onclick = () => {
-  resetGameUI();
-  sendVote(true);
-};
-document.getElementById("exit-btn").onclick = () =>
-  window.location.href = "{% url 'game:main_menu' %}";
-
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
-    if (i === idx && subgameWinners[i] === null) {
-      board.style.boxShadow = idx !== null ? (document.getElementById("current-turn").textContent === 'X' ? '0 0 10px 4px red' : '0 0 10px 4px green') : "none";
-    } else if (idx === null && subgameWinners[i] === null) {
-      board.style.boxShadow = document.getElementById("current-turn").textContent === 'X' ? '0 0 10px 4px red' : '0 0 10px 4px green';
-    } else {
-      board.style.boxShadow = "none";
-    }
+    const subSquares = board.querySelectorAll('.small-square');
+    const isActive = (idx === i || idx === null) && subgameWinners[i] === null;
+    subSquares.forEach(sq => {
+      if (!sq.textContent) {
+        sq.style.backgroundColor = isActive
+          ? (document.getElementById("current-turn").textContent === 'X' ? '#ffcaca' : '#ccffcc')
+          : '#f9f9f9';
+      }
+    });
   });
-}
-
-function showResult(winner, msg) {
-  document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
-  document.getElementById("resultMessage").textContent = msg;
-  document.getElementById("gameResultModal").style.display = 'block';
-  animateResult(winner !== myPlayer);
-  if (interval) clearInterval(interval);
-  document.getElementById("vote-panel").style.display = 'block';
-}
-
-function animateResult(isLoss) {
-  const container = document.querySelector('.confetti-container');
-  container.innerHTML = '';
-  if (isLoss) {
-    for (let i = 0; i < 100; i++) {
-      let drop = document.createElement('div');
-      drop.className = 'rain-drop';
-      drop.style.left = Math.random() * 100 + 'vw';
-      drop.style.height = (5 + Math.random() * 10) + 'px';
-      container.appendChild(drop);
-    }
-  } else {
-    for (let i = 0; i < 150; i++) {
-      let cf = document.createElement('div');
-      cf.className = 'confetti';
-      cf.style.left = Math.random() * 100 + 'vw';
-      cf.style.width = (5 + Math.random() * 5) + 'px';
-      container.appendChild(cf);
-    }
-    document.getElementById("confettiSound").play().catch(() => {});
-  }
-}
-
-function sendVote(v) {
-  socket.send(JSON.stringify({ action: 'replay_vote', from: myPlayer, vote: v ? 'yes' : 'no' }));
-  if (!v) {
-    setTimeout(() => window.location.href = "{% url 'game:main_menu' %}", 500);
-  }
-}
-
-function updateVotesUI() {
-  document.getElementById("vote-status").innerText =
-    `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
-  if (votes.X && votes.O) {
-    document.getElementById("vote-status").innerText += " — Restarting game...";
-  } else {
-    document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
-  }
 }
 
 function resetGameUI() {
@@ -286,6 +187,144 @@ function resetGameUI() {
   document.getElementById("vote-panel").style.display = 'none';
   votes = { X: false, O: false };
   document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
+  document.querySelectorAll(".big-overlay").forEach(el => el.remove());
+}
+
+const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
+
+socket.onmessage = e => {
+  const data = JSON.parse(e.data);
+  switch (data.type) {
+    case 'player_assignment':
+      myPlayer = data.player;
+      document.getElementById("assigned-player").textContent = myPlayer;
+      break;
+    case 'start':
+      document.getElementById("waiting-room").style.display = 'none';
+      document.getElementById("info-panel").style.display = 'block';
+      document.getElementById("game-board").style.display = 'grid';
+      document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
+      timer.X = data.time_x;
+      timer.O = data.time_o;
+      document.getElementById("timer-x").textContent = formatTime(timer.X);
+      document.getElementById("timer-o").textContent = formatTime(timer.O);
+      if (interval) clearInterval(interval);
+      interval = setInterval(updateTimers, 1000);
+      document.getElementById("current-turn").textContent = data.next_player;
+      resetGameUI();
+      updateSquareColors(data.next_player);
+      break;
+    case 'move':
+      const sq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);
+      if (sq) {
+        sq.textContent = data.player;
+        sq.style.pointerEvents = 'none';
+        sq.style.color = data.player === 'X' ? 'red' : 'green';
+        sq.style.backgroundColor = '#f9f9f9';
+      }
+      if (data.winner) {
+        subgameWinners[data.main_index] = data.player;
+        const board = document.querySelector(`.big-board[data-board-index="${data.main_index}"]`);
+        const container = board?.parentElement;
+        if (container && !container.querySelector('.big-overlay')) {
+          const overlay = document.createElement('div');
+          overlay.classList.add('big-overlay');
+          if (data.player === 'X') overlay.classList.add('x');
+          overlay.textContent = data.player;
+          container.appendChild(overlay);
+        }
+        board.querySelectorAll('.small-square').forEach(sq => sq.style.pointerEvents = 'none');
+      }
+      currentActive = data.active_index;
+      document.getElementById("current-turn").textContent = data.next_player;
+      highlightActive(currentActive);
+      updateSquareColors(data.next_player);
+      if (data.winner) showResult(data.winner, data.winner === ' ' ? 'Draw!' : `${data.winner} wins!`);
+      break;
+    case 'surrender':
+      showResult(data.winner, `${data.winner} wins by surrender!`);
+      break;
+    case 'replay_vote':
+      votes[data.from] = data.vote === 'yes';
+      updateVotesUI();
+      break;
+    case 'error':
+      alert(data.message);
+      break;
+  }
+};
+
+document.querySelectorAll(".small-square").forEach(sq => {
+  sq.onclick = () => {
+    if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent)
+      return alert("Wait your turn");
+    const main = parseInt(sq.dataset.main);
+    const sub = parseInt(sq.dataset.sub);
+    if (subgameWinners[main] !== null) return alert("This subgrid is already won.");
+    if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null)
+      return alert("You must play in the highlighted subgrid.");
+    if (sq.textContent) return;
+    socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+  };
+});
+
+document.getElementById("surrender-btn").onclick = () => {
+  if (!myPlayer) return;
+  if (confirm("Are you sure you want to surrender?")) {
+    socket.send(JSON.stringify({ action: 'surrender', player: myPlayer }));
+  }
+};
+
+document.getElementById("exit-btn").onclick = () => {
+  window.location.href = "{% url 'game:main_menu' %}";
+};
+
+function updateSquareColors(turn) {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    if (!sq.textContent) sq.style.backgroundColor = '#f9f9f9';
+  });
+  highlightActive(currentActive);
+}
+
+function showResult(winner, msg) {
+  document.getElementById("resultTitle").textContent = winner === ' ' ? "Draw" : winner + " Wins!";
+  document.getElementById("resultMessage").textContent = msg;
+  document.getElementById("gameResultModal").style.display = 'flex';
+  animateResult(winner !== myPlayer);
+  if (interval) clearInterval(interval);
+  document.getElementById("vote-panel").style.display = 'block';
+}
+
+function animateResult(isLoss) {
+  const container = document.querySelector('.confetti-container');
+  container.innerHTML = '';
+  if (isLoss) {
+    for (let i = 0; i < 100; i++) {
+      const drop = document.createElement('div');
+      drop.className = 'rain-drop';
+      drop.style.left = Math.random() * 100 + 'vw';
+      drop.style.height = (5 + Math.random() * 10) + 'px';
+      container.appendChild(drop);
+    }
+  } else {
+    for (let i = 0; i < 150; i++) {
+      const cf = document.createElement('div');
+      cf.className = 'confetti';
+      cf.style.left = Math.random() * 100 + 'vw';
+      cf.style.width = (5 + Math.random() * 5) + 'px';
+      container.appendChild(cf);
+    }
+    document.getElementById("confettiSound").play().catch(() => {});
+  }
+}
+
+function updateVotesUI() {
+  document.getElementById("vote-status").innerText = `Votes — X: ${votes.X ? '✔' : '✘'} | O: ${votes.O ? '✔' : '✘'}`;
+  if (votes.X && votes.O) {
+    document.getElementById("vote-status").innerText += " — Restarting game...";
+  } else {
+    document.getElementById("replay-btn").style.display = votes[myPlayer] ? 'inline-block' : 'none';
+  }
 }
 </script>
 

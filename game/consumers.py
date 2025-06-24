@@ -4,7 +4,6 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
 
-
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_code = self.scope['url_route']['kwargs']['room_code']
@@ -82,6 +81,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         if not game or game.winner:
             return
 
+        subgame = await self.get_subgame_by_index(game, main_index)
+        if subgame and subgame.winner:
+            await self.send(text_data=json.dumps({
+                'type': 'error',
+                'message': f"Subgrid {main_index} has already been won by {subgame.winner}."
+            }))
+            return
+
         try:
             await self.play_move(game, main_index, sub_index)
         except Exception as e:
@@ -146,7 +153,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif self.vote_no['X'] or self.vote_no['O']:
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
-            # Replay canceled; frontend handles this by staying in result screen
 
     async def start_timer_loop(self):
         if self.timer_task:
@@ -236,6 +242,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             return None
 
     @database_sync_to_async
+    def get_subgame_by_index(self, game, main_index):
+        return game.sub_games.filter(index=main_index).first()
+
+    @database_sync_to_async
     def assign_player(self, game):
         if not game.player_x:
             game.player_x = self.channel_name
@@ -291,6 +301,6 @@ class GameConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def reset_full_game(self):
         game = Game.objects.get(room_code=self.room_code)
-        game.reset_state()  # Assumes you implemented this in your Game model
+        game.reset_state()
         game.create_subgames()
         game.save()

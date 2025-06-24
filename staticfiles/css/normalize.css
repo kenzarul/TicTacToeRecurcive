@@ -467,6 +467,40 @@ button.modal-button {
     transform: scale(1.1);
 }
 
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#help-button.disabled {
+    pointer-events: none;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#how-to-play-modal {
+    z-index: 1001;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-htp-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1002;
+}
+
 /* Styles for the how-to-play page */
 /* How to Play Container */
 .how-to-play-container {
@@ -539,29 +573,7 @@ button.modal-button {
     list-style-type: circle;
 }
 
-/* Back Button */
-.back-button {
-    display: block;
-    width: 200px;
-    margin: 30px auto 0;
-    padding: 12px 25px;
-    background-color: #dc143c ;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    font-weight: bold;
-    text-align: center;
-    transition: all 0.3s;
-    border: none;
-    cursor: pointer;
-    font-size: 1.1rem;
-}
 
-.back-button:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
 
 /**/
 @media (max-width: 768px) {

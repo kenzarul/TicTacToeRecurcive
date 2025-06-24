@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.http import JsonResponse
 
 from .forms import NewGameForm, PlayForm
 from .models import Game
@@ -30,7 +31,12 @@ def main_menu_guest(request):
 # ======================= Single Player Views =======================
 
 def how_to_play(request):
-    return render(request, 'game/how_to_play.html')
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # AJAX request - return just the content
+        return render(request, 'game/how_to_play.html')
+    else:
+        # Regular request - return full page
+        return render(request, 'game/how_to_play_full.html')
 
 def single_player(request):
     return render(request, 'game/single_player.html')

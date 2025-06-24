@@ -443,6 +443,74 @@ button.modal-button {
 /*HOW TO PLAY*/
 /* Add these to your existing CSS */
 
+.modal-htp {
+    display: none;
+    position: fixed;
+    z-index: 1001;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.7);
+    overflow-y: auto;
+}
+
+.modal-htp-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    width: 80%;
+    max-width: 800px;
+    position: relative;
+}
+
+.close-modal-htp {
+    position: absolute;
+    top: 15px;
+    right: 25px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #dc143c;
+    cursor: pointer;
+    z-index: 1002; /* Make sure it's above other elements */
+}
+
+
+.close-modal-htp:hover {
+    color: #45a049;
+}
+
+#help-button[disabled] {
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+    pointer-events: none !important;
+}
+
+.close-modal-htp-button {
+    display: block;
+    width: 400px;
+    margin: 30px auto 0;
+    padding: 12px 25px;
+    background-color: #dc143c;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.close-modal-htp-button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .help-button {
     position: fixed;
     top: 20px;

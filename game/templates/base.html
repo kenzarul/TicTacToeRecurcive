@@ -3,6 +3,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <meta name="csrf-token" content="{{ csrf_token }}">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <title>Tic-Tac-Toe</title>
         <meta name="description" content="">
@@ -17,7 +18,7 @@
 
     <body>
 
-    <a href="{% url 'game:how_to_play' %}" class="help-button">?</a>
+    <a href="{% url 'game:how_to_play' %}" class="help-button" id="help-button">?</a>
 
  <div class="tictactoe-container">
 
@@ -52,6 +53,15 @@
     <div class="menu-container">
         {% block body %}
         {% endblock %}
+    </div>
+
+    <div id="how-to-play-modal" class="modal-htp">
+    <div class="modal-htp-content">
+        <span class="close-modal-htp">&times;</span>
+        <div class="how-to-play-content">
+            <!-- Content will be loaded here via AJAX -->
+        </div>
+    </div>
     </div>
 
 

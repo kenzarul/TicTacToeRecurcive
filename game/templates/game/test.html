@@ -59,8 +59,8 @@
   .confetti, .rain-drop {
     position: absolute;
     animation: fall 3s linear infinite;
+    z-index: 10;
   }
-
   @keyframes fall {
     to {
       transform: translateY(100vh);
@@ -92,6 +92,31 @@
   #surrender-btn .skull {
     font-size: 28px;
     margin-right: 6px;
+  }
+
+  /* Highlight playable squares for X and O */
+  .small-square.playable-x {
+    background-color: #ffe4e6 !important; /* light red */
+    border: 2px solid #ef4444 !important;
+  }
+  .small-square.playable-o {
+    background-color: #dbeafe !important; /* light blue */
+    border: 2px solid #2563eb !important;
+  }
+
+  /* Board won by X: purple */
+  .big-board.won-x {
+    background: linear-gradient(135deg, #a78bfa 60%, #f3e8ff 100%) !important;
+    box-shadow: 0 0 12px 2px #a78bfa;
+    border: 3px solid #a21caf !important;
+    position: relative;
+  }
+  /* Board won by O: green */
+  .big-board.won-o {
+    background: linear-gradient(135deg, #bbf7d0 60%, #f0fdf4 100%) !important;
+    box-shadow: 0 0 12px 2px #22c55e;
+    border: 3px solid #16a34a !important;
+    position: relative;
   }
 </style>
 
@@ -332,24 +357,39 @@ function attachSquareHandlers() {
       if (document.getElementById("gameResultModal").style.display === 'flex') return;
       const main = parseInt(sq.dataset.main);
       const sub = parseInt(sq.dataset.sub);
+
       // Prevent move if already played
       if (sq.textContent) return;
+
       // Prevent move if not your turn
       if (myPlayer !== document.getElementById("current-turn").textContent) {
         alert("Wait your turn");
         return;
       }
+
       // Prevent move if not active board
-      if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null) {
+      if (
+        currentActive !== null &&
+        currentActive !== main &&
+        subgameWinners[currentActive] === null
+      ) {
         alert("You must play in the highlighted subgrid.");
         return;
       }
+
       // Prevent move if subgrid is already won
       if (subgameWinners[main] !== null) {
         alert("This subgrid is already won.");
         return;
       }
-      socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+
+      // Only allow move if this is a playable square
+      if (
+        (currentActive === null && subgameWinners[main] === null && sq.textContent === '') ||
+        (currentActive === main && subgameWinners[main] === null && sq.textContent === '')
+      ) {
+        socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+      }
     };
   });
 }
@@ -385,11 +425,15 @@ function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
     const subSquares = board.querySelectorAll('.small-square');
     const isActive = (idx === i || idx === null) && subgameWinners[i] === null;
+    const turn = document.getElementById("current-turn").textContent;
     subSquares.forEach(sq => {
-      if (!sq.textContent) {
-        sq.style.backgroundColor = isActive
-          ? (document.getElementById("current-turn").textContent === 'X' ? '#ffcaca' : '#ccffcc')
-          : '#f9f9f9';
+      sq.classList.remove('playable-x', 'playable-o');
+      if (!sq.textContent && isActive) {
+        if (turn === 'X') {
+          sq.classList.add('playable-x');
+        } else if (turn === 'O') {
+          sq.classList.add('playable-o');
+        }
       }
     });
   });
@@ -397,9 +441,21 @@ function highlightActive(idx) {
 
 function updateSquareColors(turn) {
   document.querySelectorAll(".small-square").forEach(sq => {
+    sq.classList.remove('playable-x', 'playable-o');
     if (!sq.textContent) sq.style.backgroundColor = '#f9f9f9';
   });
+  // Highlight playable squares for the current turn
   highlightActive(currentActive);
+
+  // Highlight boards won by X or O
+  document.querySelectorAll(".big-board").forEach((board, i) => {
+    board.classList.remove('won-x', 'won-o');
+    if (subgameWinners[i] === 'X') {
+      board.classList.add('won-x');
+    } else if (subgameWinners[i] === 'O') {
+      board.classList.add('won-o');
+    }
+  });
 }
 
 function showResult(winner, msg) {
@@ -429,6 +485,12 @@ function showResult(winner, msg) {
   modal.style.display = 'flex';
   animateResult(playerLost);
 
+  if (!playerLost) {
+    confettiSound.volume = 0.3;
+    confettiSound.currentTime = 0;
+    confettiSound.play().catch(() => {});
+  }
+
   if (interval) clearInterval(interval);
   document.getElementById("replay-vote").style.display = 'block';
   document.getElementById("vote-yes").disabled = false;
@@ -456,7 +518,6 @@ function animateResult(isLoss) {
       cf.style.width = (5 + Math.random() * 5) + 'px';
       container.appendChild(cf);
     }
-    document.getElementById("confettiSound").play().catch(() => {});
   }
 }
 

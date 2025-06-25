@@ -6,6 +6,15 @@
   <button id="surrender-btn" class="modal-btn" style="font-size:18px;">🚩 Surrender</button>
 </div>
 
+<!-- Timer display: Only for human player -->
+<div id="timer-panel" style="text-align:center; margin-bottom: 20px;">
+  {% if game.player_x == 'human' %}
+    <span style="font-size:18px;">⏱ X: <span id="timer-x">5:00</span></span>
+  {% elif game.player_o == 'human' %}
+    <span style="font-size:18px;">⏱ O: <span id="timer-x">5:00</span></span>
+  {% endif %}
+</div>
+
 <!-- Game Result Modal -->
 <div id="gameResultModal" class="modal" style="display: none;">
   <div class="modal-content">
@@ -25,6 +34,21 @@
     </div>
   </div>
 </div>
+
+<!-- Loading overlay for AI thinking -->
+<div id="ai-loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.45); z-index:99999; justify-content:center; align-items:center;">
+  <div style="text-align:center;">
+    <div class="spinner" style="margin:auto; width:60px; height:60px; border:8px solid #eee; border-top:8px solid #ec4899; border-radius:50%; animation:spin 1s linear infinite;"></div>
+    <div style="margin-top:18px; color:white; font-size:1.3em; font-weight:bold;">Computer is thinking...</div>
+  </div>
+</div>
+
+<style>
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+</style>
 
 {% with next_player=game.next_player game_over=game.is_game_over %}
   {% if game_over == 'X' or game_over == 'O' or game_over == ' ' %}
@@ -278,10 +302,84 @@
         </div>
 {% endwith %}
 
-
-
 <script>
-function showResultModal(result) {
+let timer = 300;
+let timerInterval = null;
+let currentTurn = "{{ game.next_player }}";
+{% if game.player_x == 'human' %}
+  const humanSymbol = "X";
+{% elif game.player_o == 'human' %}
+  const humanSymbol = "O";
+{% else %}
+  const humanSymbol = null;
+{% endif %}
+let gameOver = {% if game.is_game_over %}true{% else %}false{% endif %};
+
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  document.getElementById("timer-x").textContent = formatTime(timer);
+}
+
+function startSinglePlayerTimer() {
+  if (!humanSymbol) return;
+  if (timerInterval) clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval = setInterval(() => {
+    if (gameOver) {
+      clearInterval(timerInterval);
+      return;
+    }
+    if (currentTurn === humanSymbol) {
+      timer--;
+      updateTimerDisplay();
+      if (timer <= 0) {
+        clearInterval(timerInterval);
+        showResultModal(humanSymbol === "X" ? "O" : "X", humanSymbol + " ran out of time!");
+        gameOver = true;
+        return;
+      }
+    }
+  }, 1000);
+}
+
+// Call this when the turn changes in your game logic:
+function setCurrentTurn(turn) {
+  currentTurn = turn;
+  updateTimerDisplay();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    startSinglePlayerTimer();
+    const surrenderBtn = document.getElementById('surrender-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    if (surrenderBtn) {
+        surrenderBtn.onclick = function() {
+            // Show lose modal immediately
+            {% if game.player_x == 'human' %}
+                showResultModal("O");
+            {% else %}
+                showResultModal("X");
+            {% endif %}
+            gameOver = true;
+            clearInterval(timerInterval);
+        };
+    }
+    if (replayBtn) {
+        replayBtn.onclick = function() {
+            // Redirect to main menu (safe fallback)
+            window.location.href = "{% url 'game:main_menu' %}";
+        };
+    }
+});
+
+// If you have JS code that updates the turn, call setCurrentTurn('X') or setCurrentTurn('O') accordingly.
+
+function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
@@ -298,22 +396,22 @@ function showResultModal(result) {
     if (result === 'X') {
         if (playerLost) {
             title.textContent = '💀 You Lose! 💀';
-            message.textContent = 'Player X (Algorithm) Wins!';
+            message.textContent = msg || 'Player X (Algorithm) Wins!';
         } else {
             title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = 'Player X Wins the Game!';
+            message.textContent = msg || 'Player X Wins the Game!';
         }
     } else if (result === 'O') {
         if (playerLost) {
             title.textContent = '💀 You Lose! 💀';
-            message.textContent = 'Player O (Algorithm) Wins!';
+            message.textContent = msg || 'Player O (Algorithm) Wins!';
         } else {
             title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = 'Player O Wins the Game!';
+            message.textContent = msg || 'Player O Wins the Game!';
         }
     } else {
         title.textContent = '🎉 Game Over! 🎉';
-        message.textContent = 'The game ended in a stalemate!';
+        message.textContent = msg || 'The game ended in a stalemate!';
     }
 
     modal.style.display = 'block';
@@ -326,22 +424,13 @@ function showResultModal(result) {
         for (let i = 0; i < 100; i++) {
             const drop = document.createElement('div');
             drop.classList.add('rain-drop');
-
-            // Random positioning
             drop.style.left = Math.random() * 100 + 'vw';
             drop.style.top = -10 + 'px';
-
-            // Random animation duration
             drop.style.animationDuration = 1 + Math.random() * 2 + 's';
-
-            // Random delay
             drop.style.animationDelay = Math.random() * 2 + 's';
-
-            // Random size
             const size = 1 + Math.random() * 3;
             drop.style.width = size + 'px';
             drop.style.height = size * 5 + 'px';
-
             confettiContainer.appendChild(drop);
         }
     } else {
@@ -349,55 +438,40 @@ function showResultModal(result) {
         for (let i = 0; i < 150; i++) {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
-
-            // Random positioning
             confetti.style.left = Math.random() * 100 + 'vw';
             confetti.style.top = -10 + 'px';
-
-            // Random animation duration
             confetti.style.animationDuration = 3 + Math.random() * 4 + 's';
-
-            // Random delay
             confetti.style.animationDelay = Math.random() * 2 + 's';
-
-            // Random size
             const size = 5 + Math.random() * 10;
             confetti.style.width = size + 'px';
             confetti.style.height = size + 'px';
-
             confettiContainer.appendChild(confetti);
         }
     }
 
-    // Play celebration sound
     confettiSound.volume = 0.3;
     confettiSound.currentTime = 0;
     confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
 
-// Surrender and Replay button logic for singleplayer
-document.addEventListener('DOMContentLoaded', function() {
-    const surrenderBtn = document.getElementById('surrender-btn');
-    const replayBtn = document.getElementById('replay-btn');
-    if (surrenderBtn) {
-        surrenderBtn.onclick = function() {
-            // Show lose modal immediately
-            {% if game.player_x == 'human' %}
-                showResultModal("O");
-            {% else %}
-                showResultModal("X");
-            {% endif %}
-        };
-    }
-    if (replayBtn) {
-        replayBtn.onclick = function() {
-            // Only reload after modal is shown, not immediately on click
-            document.getElementById('gameResultModal').style.display = 'none';
-            setTimeout(() => {
-                window.location.reload();
-            }, 300);
-        };
-    }
-});
+// Show/hide AI loading overlay
+function showAILoading() {
+  document.getElementById('ai-loading-overlay').style.display = 'flex';
+}
+function hideAILoading() {
+  document.getElementById('ai-loading-overlay').style.display = 'none';
+}
+
+// Example usage:
+// When it's the computer's turn, call showAILoading() before starting minimax,
+// and call hideAILoading() after the move is made and the board is updated.
+//
+// If your AI move is triggered via AJAX or a setTimeout, wrap the AI logic like:
+//
+// showAILoading();
+// setTimeout(function() {
+//   ...AI move logic...
+//   hideAILoading();
+// }, 100); // Simulate delay if needed
 </script>
 {% endblock %}

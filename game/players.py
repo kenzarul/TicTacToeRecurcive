@@ -73,19 +73,17 @@ class LegendPlayer:
         best_score = -math.inf
         best_move = None
         opponent = self.get_opponent(player)
-        # Move ordering: center, corners, sides
-        move_order = [4, 0, 2, 6, 8, 1, 3, 5, 7]
-        for i in move_order:
+        for i in self.get_move_order(board):
             if board[i] == ' ':
                 board[i] = player
-                score = self.minimax(board, 0, False, player, opponent)
+                score = self.minimax(board, 0, False, player, opponent, -math.inf, math.inf)
                 board[i] = ' '
                 if score > best_score:
                     best_score = score
                     best_move = i
         return best_move
 
-    def minimax(self, board, depth, is_maximizing, player, opponent):
+    def minimax(self, board, depth, is_maximizing, player, opponent, alpha, beta):
         winner = self.check_winner(board)
         if winner == player:
             return 100 - depth
@@ -95,23 +93,33 @@ class LegendPlayer:
             return 0
 
         if is_maximizing:
-            best_score = -math.inf
-            for i in range(9):
+            max_eval = -math.inf
+            for i in self.get_move_order(board):
                 if board[i] == ' ':
                     board[i] = player
-                    score = self.minimax(board, depth + 1, False, player, opponent)
+                    eval = self.minimax(board, depth + 1, False, player, opponent, alpha, beta)
                     board[i] = ' '
-                    best_score = max(score, best_score)
-            return best_score
+                    max_eval = max(max_eval, eval)
+                    alpha = max(alpha, eval)
+                    if beta <= alpha:
+                        break
+            return max_eval
         else:
-            best_score = math.inf
-            for i in range(9):
+            min_eval = math.inf
+            for i in self.get_move_order(board):
                 if board[i] == ' ':
                     board[i] = opponent
-                    score = self.minimax(board, depth + 1, True, player, opponent)
+                    eval = self.minimax(board, depth + 1, True, player, opponent, alpha, beta)
                     board[i] = ' '
-                    best_score = min(score, best_score)
-            return best_score
+                    min_eval = min(min_eval, eval)
+                    beta = min(beta, eval)
+                    if beta <= alpha:
+                        break
+            return min_eval
+
+    def get_move_order(self, board):
+        # Prefer center, then corners, then sides
+        return [4, 0, 2, 6, 8, 1, 3, 5, 7]
 
     def check_winner(self, board):
         for combo in self.WINNING_COMBINATIONS:

@@ -160,7 +160,8 @@ class Game(models.Model):
         self.active_index = None
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
-        self.last_move_time = timezone.now()
+        self.last_move_time = None
+        self.sub_games.all().delete()
         self.create_subgames()
         self.save()
 

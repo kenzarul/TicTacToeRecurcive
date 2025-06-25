@@ -192,13 +192,15 @@ socket.onmessage = e => {
       break;
     case 'surrender':
       showResult(data.winner, `${data.winner} wins by surrender!`);
+      // Do NOT resetGameUI() or send restart request here.
+      break;
+    case 'restart':
+      resetGameUI();
+      socket.send(JSON.stringify({ action: 'get_state' }));
       break;
     case 'replay_vote':
       votes[data.from] = data.vote === 'yes';
       updateVotesUI();
-      break;
-    case 'restart':
-      location.reload();
       break;
     case 'error':
       alert(data.message);
@@ -283,22 +285,42 @@ function updateTimers() {
   }
 }
 
+function attachSquareHandlers() {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    sq.onclick = function() {
+      if (!myPlayer) return;
+      if (document.getElementById("gameResultModal").style.display === 'flex') return;
+      const main = parseInt(sq.dataset.main);
+      const sub = parseInt(sq.dataset.sub);
+      // Prevent move if already played
+      if (sq.textContent) return;
+      // Prevent move if not your turn
+      if (myPlayer !== document.getElementById("current-turn").textContent) {
+        alert("Wait your turn");
+        return;
+      }
+      // Prevent move if not active board
+      if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null) {
+        alert("You must play in the highlighted subgrid.");
+        return;
+      }
+      // Prevent move if subgrid is already won
+      if (subgameWinners[main] !== null) {
+        alert("This subgrid is already won.");
+        return;
+      }
+      socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+    };
+  });
+}
+
+// Call this after every reset or start
 function resetGameUI() {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.textContent = '';
     sq.style.pointerEvents = 'auto';
     sq.style.backgroundColor = '#f9f9f9';
     sq.style.color = '';
-    sq.onclick = () => {
-      if (!myPlayer || myPlayer !== document.getElementById("current-turn").textContent) return alert("Wait your turn");
-      const main = parseInt(sq.dataset.main);
-      const sub = parseInt(sq.dataset.sub);
-      if (subgameWinners[main] !== null) return alert("This subgrid is already won.");
-      if (currentActive !== null && currentActive !== main && subgameWinners[currentActive] === null)
-        return alert("You must play in the highlighted subgrid.");
-      if (sq.textContent) return alert("Square already played");
-      socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
-    };
   });
   subgameWinners = Array(9).fill(null);
   currentActive = null;
@@ -307,8 +329,17 @@ function resetGameUI() {
   votes = { X: false, O: false };
   document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
   document.querySelectorAll(".big-overlay").forEach(el => el.remove());
+  timer.X = 300;
+  timer.O = 300;
+  document.getElementById("timer-x").textContent = formatTime(timer.X);
+  document.getElementById("timer-o").textContent = formatTime(timer.O);
+  if (interval) clearInterval(interval);
+  interval = setInterval(updateTimers, 1000);
+  attachSquareHandlers(); // <-- Add this line
 }
 
+// Also call once on page load
+attachSquareHandlers();
 
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {

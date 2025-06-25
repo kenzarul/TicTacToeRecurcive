@@ -130,6 +130,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': f"{surrendering_player} surrendered. {winner} wins!",
             }
         )
+        # Do NOT reset the game state here. Wait for replay votes.
 
     async def handle_vote(self, data):
         player = data.get('from')
@@ -156,7 +157,14 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.vote_no = {'X': False, 'O': False}
 
     async def handle_restart(self):
-        await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
+        # Called when both players voted yes or explicit restart
+        await self.channel_layer.group_send(self.group_name, {'type': 'restart_game'})
+
+    async def restart_game(self, event):
+        # Send restart event to clients and start timer loop
+        await self.send(text_data=json.dumps({
+            'type': 'restart'
+        }))
         await self.start_timer_loop()
 
     async def start_timer_loop(self):
@@ -312,5 +320,4 @@ class GameConsumer(AsyncWebsocketConsumer):
     def reset_full_game(self):
         game = Game.objects.get(room_code=self.room_code)
         game.reset_state()
-        game.create_subgames()
         game.save()

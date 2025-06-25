@@ -14,4 +14,5 @@ urlpatterns = [
     path('game/', include(('game.urls', 'game'), namespace='game')),  # ton app
     path('guest/', views.main_menu_guest, name='main_menu_guest'),
 
+    path('restart/', views.restart_game, name='restart_game'),
 ]

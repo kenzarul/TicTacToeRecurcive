@@ -162,3 +162,12 @@ def signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
+
+def restart_game(request):
+    room_code = request.GET.get('room_code')  # Get the room code from the request
+    try:
+        game = Game.objects.get(room_code=room_code)
+        game.reset_state()  # Reset the game state
+    except Game.DoesNotExist:
+        pass  # Handle the case where the game does not exist
+    return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page

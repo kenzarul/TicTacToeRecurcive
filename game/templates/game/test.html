@@ -104,6 +104,20 @@
     border: 2px solid #2563eb !important;
   }
 
+  /* Highlight winning small squares */
+  .small-square.win-x {
+    background: linear-gradient(135deg, #a78bfa 60%, #f3e8ff 100%) !important;
+    border: 2px solid #a21caf !important;
+    box-shadow: 0 0 10px 2px #a78bfa;
+    color: #6d28d9 !important;
+  }
+  .small-square.win-o {
+    background: linear-gradient(135deg, #60a5fa 60%, #dbeafe 100%) !important;
+    border: 2px solid #2563eb !important;
+    box-shadow: 0 0 10px 2px #2563eb;
+    color: #2563eb !important;
+  }
+
   /* Board won by X: purple */
   .big-board.won-x {
     background: linear-gradient(135deg, #a78bfa 60%, #f3e8ff 100%) !important;
@@ -195,6 +209,9 @@ let interval = null;
 let currentActive = null;
 let subgameWinners = Array(9).fill(null);
 
+// Track winning squares for each subgame
+let subgameWinningSquares = Array(9).fill(null);
+
 const socket = new WebSocket("ws://" + window.location.host + "/ws/game/{{ game.room_code }}/");
 
 socket.onmessage = e => {
@@ -236,18 +253,18 @@ socket.onmessage = e => {
         sq.style.color = data.player === 'X' ? 'red' : 'green';
         sq.style.backgroundColor = '#f9f9f9';
       }
-      if (data.winner) {
+      // Highlight winning squares in subgame if win occurs
+      if (data.winner && data.winning_line) {
         subgameWinners[data.main_index] = data.player;
-        const board = document.querySelector(`.big-board[data-board-index="${data.main_index}"]`);
-        const container = board?.parentElement;
-        if (container && !container.querySelector('.big-overlay')) {
-          const overlay = document.createElement('div');
-          overlay.classList.add('big-overlay');
-          if (data.player === 'X') overlay.classList.add('x');
-          overlay.textContent = data.player;
-          container.appendChild(overlay);
-        }
-        board.querySelectorAll('.small-square').forEach(sq => sq.style.pointerEvents = 'none');
+        subgameWinningSquares[data.main_index] = data.winning_line;
+        data.winning_line.forEach(idx => {
+          const winSq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${idx}"]`);
+          if (winSq) {
+            winSq.classList.add(data.player === 'X' ? 'win-x' : 'win-o');
+          }
+        });
+      } else if (data.winner) {
+        subgameWinners[data.main_index] = data.player;
       }
       currentActive = data.active_index;
       document.getElementById("current-turn").textContent = data.next_player;
@@ -401,8 +418,10 @@ function resetGameUI() {
     sq.style.pointerEvents = 'auto';
     sq.style.backgroundColor = '#f9f9f9';
     sq.style.color = '';
+    sq.classList.remove('win-x', 'win-o');
   });
   subgameWinners = Array(9).fill(null);
+  subgameWinningSquares = Array(9).fill(null);
   currentActive = null;
   document.getElementById("gameResultModal").style.display = 'none';
   document.getElementById("vote-status").textContent = "";
@@ -443,6 +462,8 @@ function updateSquareColors(turn) {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.classList.remove('playable-x', 'playable-o');
     if (!sq.textContent) sq.style.backgroundColor = '#f9f9f9';
+    // Remove win highlight if not in winning line
+    sq.classList.remove('win-x', 'win-o');
   });
   // Highlight playable squares for the current turn
   highlightActive(currentActive);
@@ -454,6 +475,15 @@ function updateSquareColors(turn) {
       board.classList.add('won-x');
     } else if (subgameWinners[i] === 'O') {
       board.classList.add('won-o');
+    }
+    // Highlight winning squares in subgame
+    if (subgameWinningSquares[i]) {
+      subgameWinningSquares[i].forEach(idx => {
+        const winSq = board.querySelector(`[data-sub="${idx}"]`);
+        if (winSq) {
+          winSq.classList.add(subgameWinners[i] === 'X' ? 'win-x' : 'win-o');
+        }
+      });
     }
   });
 }

@@ -200,6 +200,14 @@ class SubGame(models.Model):
     def __str__(self):
         return f"SubGame {self.game.pk}-{self.index}"
 
+    def get_winning_line(self):
+        board = list(self.board)
+        for wins in self.WINNING:
+            w = (board[wins[0]], board[wins[1]], board[wins[2]])
+            if w == ('X', 'X', 'X') or w == ('O', 'O', 'O'):
+                return wins
+        return None
+
     @property
     def is_game_over(self):
         board = list(self.board)
@@ -227,7 +235,11 @@ class SubGame(models.Model):
 
         self.last_move_index = index
         self.save()
-        return self.is_game_over
+        winner = self.is_game_over
+        winning_line = None
+        if winner in ('X', 'O'):
+            winning_line = self.get_winning_line()
+        return (winner, winning_line)
 
     def play_auto(self):
         if not self.is_game_over:

@@ -92,7 +92,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         try:
-            await self.play_move(game, main_index, sub_index)
+            # --- CHANGED: get both winner and winning_line from play_move ---
+            winner, winning_line = await self.play_move(game, main_index, sub_index, player)
         except Exception as e:
             await self.send(text_data=json.dumps({
                 'type': 'error',
@@ -113,6 +114,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'active_index': game_data['active_index'],
                 'time_x': game_data['time_x'],
                 'time_o': game_data['time_o'],
+                'winning_line': list(winning_line) if winning_line else None,  # <-- send winning_line
             }
         )
 
@@ -216,6 +218,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             'active_index': event['active_index'],
             'time_x': event['time_x'],
             'time_o': event['time_o'],
+            'winning_line': event.get('winning_line'),  # <-- pass through
         }))
 
     async def surrender_game(self, event):
@@ -284,8 +287,24 @@ class GameConsumer(AsyncWebsocketConsumer):
         game.save()
 
     @database_sync_to_async
-    def play_move(self, game, main_index, sub_index):
-        return game.play(main_index, sub_index)
+    def play_move(self, game, main_index, sub_index, symbol=None):
+        # --- CHANGED: return both winner and winning_line from SubGame.play ---
+        sub_game = game.sub_games.filter(index=main_index).first()
+        if not sub_game:
+            raise ValueError("SubGame does not exist")
+        result = sub_game.play(sub_index, symbol)
+        # result is (winner, winning_line)
+        game.last_main_index = main_index
+        game.last_sub_index = sub_index
+        game.last_player = symbol
+        if result[0]:
+            game.board = game.board[:main_index] + result[0] + game.board[main_index + 1:]
+        elif ' ' not in sub_game.board:
+            game.board = game.board[:main_index] + ' ' + game.board[main_index + 1:]
+        game.set_active_index(sub_index)
+        game.save()
+        game.is_game_over  # Trigger win check
+        return result
 
     @database_sync_to_async
     def get_game_data(self):

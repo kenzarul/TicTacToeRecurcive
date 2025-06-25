@@ -162,7 +162,14 @@ class Game(models.Model):
         self.remaining_o = self.time_o
         self.last_move_time = None
         self.sub_games.all().delete()
-        self.create_subgames()
+        # Only pass required fields, let defaults handle the rest
+        for i in range(9):
+            SubGame.objects.create(
+                game=self,
+                index=i,
+                player_x=self.player_x,
+                player_o=self.player_o
+            )
         self.save()
 
 

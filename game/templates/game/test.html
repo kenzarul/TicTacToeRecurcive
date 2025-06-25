@@ -149,6 +149,7 @@ socket.onmessage = e => {
       document.getElementById("assigned-player").textContent = myPlayer;
       break;
     case 'start':
+      // Hide waiting room, show info panel and game board
       document.getElementById("waiting-room").style.display = 'none';
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
@@ -162,6 +163,12 @@ socket.onmessage = e => {
       document.getElementById("current-turn").textContent = data.next_player;
       resetGameUI();
       updateSquareColors(data.next_player);
+      break;
+    case 'waiting':
+      // Show waiting room, hide info panel and game board
+      document.getElementById("waiting-room").style.display = 'block';
+      document.getElementById("info-panel").style.display = 'none';
+      document.getElementById("game-board").style.display = 'none';
       break;
     case 'move':
       const sq = document.querySelector(`[data-main="${data.main_index}"][data-sub="${data.sub_index}"]`);

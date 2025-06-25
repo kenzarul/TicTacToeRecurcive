@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 
 {% block body %}
+<!-- Surrender button on main page -->
+<div style="text-align:center; margin: 20px;">
+  <button id="surrender-btn" class="modal-btn" style="font-size:18px;">🚩 Surrender</button>
+</div>
+
 <!-- Game Result Modal -->
 <div id="gameResultModal" class="modal" style="display: none;">
   <div class="modal-content">
@@ -9,13 +14,13 @@
     </div>
     <div class="modal-body">
       <p id="resultMessage"></p>
-        <div class="confetti-container"></div>
+      <div class="confetti-container"></div>
     </div>
-      <audio id="confettiSound" preload="auto">
-    <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+    <audio id="confettiSound" preload="auto">
+      <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
     </audio>
     <div class="modal-footer">
-      <a href="{% url 'game:index' %}" class="modal-btn new-game">New Game</a>
+      <button id="replay-btn" class="modal-btn">🔄 Replay</button>
       <a href="{% url 'game:main_menu' %}" class="modal-btn exit">Exit</a>
     </div>
   </div>
@@ -369,5 +374,30 @@ function showResultModal(result) {
     confettiSound.currentTime = 0;
     confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
+
+// Surrender and Replay button logic for singleplayer
+document.addEventListener('DOMContentLoaded', function() {
+    const surrenderBtn = document.getElementById('surrender-btn');
+    const replayBtn = document.getElementById('replay-btn');
+    if (surrenderBtn) {
+        surrenderBtn.onclick = function() {
+            // Show lose modal immediately
+            {% if game.player_x == 'human' %}
+                showResultModal("O");
+            {% else %}
+                showResultModal("X");
+            {% endif %}
+        };
+    }
+    if (replayBtn) {
+        replayBtn.onclick = function() {
+            // Only reload after modal is shown, not immediately on click
+            document.getElementById('gameResultModal').style.display = 'none';
+            setTimeout(() => {
+                window.location.reload();
+            }, 300);
+        };
+    }
+});
 </script>
 {% endblock %}

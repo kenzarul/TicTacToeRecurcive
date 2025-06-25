@@ -115,7 +115,11 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        self.active_index = None if self.board[index] != ' ' else index
+        # If the intended next board is already won or full, allow any board
+        if index is None or self.board[index] != ' ':
+            self.active_index = None
+        else:
+            self.active_index = index
 
     def create_subgames(self):
         if not self.player_x or not self.player_o:
@@ -161,8 +165,8 @@ class Game(models.Model):
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = None
+        # Delete all subgames and recreate them with default state
         self.sub_games.all().delete()
-        # Only pass required fields, let defaults handle the rest
         for i in range(9):
             SubGame.objects.create(
                 game=self,
@@ -171,6 +175,7 @@ class Game(models.Model):
                 player_o=self.player_o
             )
         self.save()
+        self.refresh_from_db()  # Ensure in-memory state is fresh
 
 
 class SubGame(models.Model):

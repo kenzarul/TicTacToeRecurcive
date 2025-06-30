@@ -96,7 +96,7 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        winner, _ = sub_game.play(sub_index, symbol)  # Extract only the winner from the tuple
         sub_game.save()
 
         self.last_main_index = main_index
@@ -224,7 +224,7 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        winner, _ = sub_game.play(sub_index, symbol)  # Extract only the winner from the tuple
         sub_game.save()
 
         self.last_main_index = main_index

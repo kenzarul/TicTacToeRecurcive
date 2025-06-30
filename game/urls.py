@@ -15,6 +15,8 @@ urlpatterns = [
     path('single/', views.single_player, name='single_player'),
     path('index/', views.index, name='index'),
     path('profile/', views.profile, name='profile'),
+    path("profile/", views.user_profile, name="profile"),
+
     # Classic game view
     path('<int:pk>/', views.game, name='detail'),
 

@@ -3,6 +3,17 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
+from .models import GameHistory
+def record_game_result(winner, player_x, player_o):
+    if winner == "X":
+        GameHistory.objects.create(user=player_x, result="win")
+        GameHistory.objects.create(user=player_o, result="loss")
+    elif winner == "O":
+        GameHistory.objects.create(user=player_o, result="win")
+        GameHistory.objects.create(user=player_x, result="loss")
+    else:
+        GameHistory.objects.create(user=player_x, result="draw")
+        GameHistory.objects.create(user=player_o, result="draw")
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):

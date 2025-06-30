@@ -638,12 +638,13 @@ button.modal-button {
     left: 20px;
     width: 40px;
     height: 40px;
-    background-color: #4CAF50;
+    background-color: #dc143c;
     color: white;
     border-radius: 50%;
     text-align: center;
     line-height: 40px;
     font-size: 24px;
+    font-weight: bold;
     text-decoration: none;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);

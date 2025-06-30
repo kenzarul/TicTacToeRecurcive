@@ -58,6 +58,9 @@
         <div class="tictactoe-image"></div>
         <div class="tictactoe-image"></div>
         <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
 
     </div>
     <div class="menu-container">
@@ -169,5 +172,28 @@
     background-color: #45a049;
     transform: scale(1.1);
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Center and space form fields in profile modal */
+.profile-content form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 28px; /* More gap between title and form */
+}
+.profile-content form input,
+.profile-content form button {
+    width: 220px;
+    max-width: 90%;
+    margin-bottom: 18px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    text-align: center;
+    font-size: 16px;
+}
+.profile-content form input {
+    margin-top: 10px;
 }
 </style>

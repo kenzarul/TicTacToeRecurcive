@@ -57,8 +57,8 @@ class GameConsumer(AsyncWebsocketConsumer):
             'next_player': game_data['next_player'],
             'player_x': game_data['player_x'],
             'player_o': game_data['player_o'],
-            'time_x': game_data['time_x'],
-            'time_o': game_data['time_o'],
+            'time_x': game_data['remaining_x'],  # Send correct remaining time for X
+            'time_o': game_data['remaining_o'],  # Send correct remaining time for O
         }))
 
     async def receive(self, text_data):
@@ -158,12 +158,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
 
-    async def handle_restart(self):
-        # Called when both players voted yes or explicit restart
-        await self.channel_layer.group_send(self.group_name, {'type': 'restart_game'})
-
     async def restart_game(self, event):
-        # Send restart event to clients and start timer loop
         await self.send(text_data=json.dumps({
             'type': 'restart'
         }))
@@ -186,18 +181,18 @@ class GameConsumer(AsyncWebsocketConsumer):
                 game_data = await self.get_game_data()
                 await self.channel_layer.group_send(self.group_name, {
                     'type': 'update_timers',
-                    'time_x': game_data['time_x'],
-                    'time_o': game_data['time_o'],
+                    'time_x': game_data['remaining_x'],  # Send updated time for X
+                    'time_o': game_data['remaining_o'],  # Send updated time for O
                 })
 
-                if game_data['time_x'] <= 0:
+                if game_data['remaining_x'] <= 0:
                     await self.channel_layer.group_send(self.group_name, {
                         'type': 'surrender_game',
                         'winner': 'O',
                         'message': '⏰ X ran out of time. O wins!',
                     })
                     break
-                if game_data['time_o'] <= 0:
+                if game_data['remaining_o'] <= 0:
                     await self.channel_layer.group_send(self.group_name, {
                         'type': 'surrender_game',
                         'winner': 'X',
@@ -317,14 +312,16 @@ class GameConsumer(AsyncWebsocketConsumer):
             'active_index': game.active_index,
             'time_x': game.time_x,
             'time_o': game.time_o,
+            'remaining_x': game.remaining_x,
+            'remaining_o': game.remaining_o,
         }
 
     @database_sync_to_async
     def decrease_timer(self, game, player):
-        if player == 'X' and game.time_x > 0:
-            game.time_x -= 1
-        elif player == 'O' and game.time_o > 0:
-            game.time_o -= 1
+        if player == 'X' and game.remaining_x > 0:
+            game.remaining_x -= 1
+        elif player == 'O' and game.remaining_o > 0:
+            game.remaining_o -= 1
         game.save()
 
     @database_sync_to_async

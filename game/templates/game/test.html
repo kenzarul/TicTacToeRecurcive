@@ -204,7 +204,7 @@ let myPlayer = null;
 let votes = { X: false, O: false };
 let countdown = 60;
 let countdownInterval = null;
-let timer = { X: 300, O: 300 };
+let timer = { X: 0, O: 0 }; // Initialize timers to 0
 let interval = null;
 let currentActive = null;
 let subgameWinners = Array(9).fill(null);
@@ -228,8 +228,8 @@ socket.onmessage = e => {
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
       document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
-      timer.X = data.time_x;
-      timer.O = data.time_o;
+      timer.X = data.time_x;  // Use backend-provided time for X
+      timer.O = data.time_o;  // Use backend-provided time for O
       document.getElementById("timer-x").textContent = formatTime(timer.X);
       document.getElementById("timer-o").textContent = formatTime(timer.O);
       if (interval) clearInterval(interval);
@@ -286,6 +286,15 @@ socket.onmessage = e => {
       break;
     case 'error':
       alert(data.message);
+      break;
+    case 'timer_update':
+      // Update timers dynamically
+      if (typeof data.time_x !== "undefined" && typeof data.time_o !== "undefined") {
+        timer.X = data.time_x;
+        timer.O = data.time_o;
+        document.getElementById("timer-x").textContent = formatTime(timer.X);
+        document.getElementById("timer-o").textContent = formatTime(timer.O);
+      }
       break;
   }
 };
@@ -356,15 +365,8 @@ function formatTime(seconds) {
 }
 
 function updateTimers() {
-  const turn = document.getElementById("current-turn").textContent;
-  if (turn === 'X' || turn === 'O') {
-    timer[turn]--;
-    document.getElementById(`timer-${turn.toLowerCase()}`).textContent = formatTime(timer[turn]);
-    if (timer[turn] <= 0) {
-      clearInterval(interval);
-      showResult(turn === 'X' ? 'O' : 'X', `${turn} ran out of time!`);
-    }
-  }
+  document.getElementById("timer-x").textContent = formatTime(timer.X);
+  document.getElementById("timer-o").textContent = formatTime(timer.O);
 }
 
 function attachSquareHandlers() {
@@ -421,20 +423,19 @@ function resetGameUI() {
     sq.classList.remove('win-x', 'win-o');
   });
   subgameWinners = Array(9).fill(null);
-  subgameWinningSquares = Array(9).fill(null);
   currentActive = null;
   document.getElementById("gameResultModal").style.display = 'none';
   document.getElementById("vote-status").textContent = "";
   votes = { X: false, O: false };
   document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
   document.querySelectorAll(".big-overlay").forEach(el => el.remove());
-  timer.X = 300;
-  timer.O = 300;
+  timer.X = 0;
+  timer.O = 0;
   document.getElementById("timer-x").textContent = formatTime(timer.X);
   document.getElementById("timer-o").textContent = formatTime(timer.O);
   if (interval) clearInterval(interval);
   interval = setInterval(updateTimers, 1000);
-  attachSquareHandlers(); // <-- Add this line
+  attachSquareHandlers();
 }
 
 // Also call once on page load

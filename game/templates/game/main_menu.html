@@ -1,21 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block body%}
-    {% if user.is_authenticated %}
-    <a href="{% url 'game:profile' %}" class="profile-icon">🧑‍🏫</a>
-{% else %}
-    <a href="{% url 'signup' %}" class="profile-icon">👤</a>
-{% endif %}
+{% block body %}
     <h1>TIC TAC TOE</h1>
-    <a href="{% url 'game:index' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:index' %}')">Single Player</a>
-    <a href="{% url 'game:multiplayer' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:multiplayer' %}')">MultiPlayer</a>
+    <div class="game-options">
+        <a href="{% url 'game:index' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:index' %}')">Single Player</a>
+        <a href="{% url 'game:multiplayer' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:multiplayer' %}')">MultiPlayer</a>
+    </div>
 {% endblock %}
-
-{% if user.is_authenticated %}
-    <p>Bienvenue {{ user.username }}</p>
-{% elif guest %}
-    <p>Bienvenue invité !</p>
-{% else %}
-    <p>Bienvenue !</p>
-{% endif %}

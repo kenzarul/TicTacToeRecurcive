@@ -6,7 +6,7 @@ from game import views
 
 urlpatterns = [
     path('accounts/logout/', auth_views.LogoutView.as_view(next_page='game:main_menu'), name='logout'),
-    path('', RedirectView.as_view(url='/accounts/login/', permanent=False)),
+    path('', RedirectView.as_view(pattern_name='game:main_menu', permanent=False)),  # Redirect to main_menu
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # login/logout
     path('signup/', views.signup, name='signup'),  # Laisse comme ça si tu utilises directement `views.signup`

@@ -20,7 +20,6 @@ def profile(request):
     )
     return render(request, 'game/profile.html', {'user_games': user_games})
 
-@login_required
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 

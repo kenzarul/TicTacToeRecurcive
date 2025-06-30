@@ -18,10 +18,20 @@
 
     <body>
 
+    <a href="#" class="profile-button" id="profile-button"
+       data-auth="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+       data-profile-url="{% url 'game:profile' %}">
+        {% if user.is_authenticated %}🧑‍🏫{% else %}👤{% endif %}
+    </a>
+
     <a href="{% url 'game:how_to_play' %}" class="help-button" id="help-button">?</a>
 
  <div class="tictactoe-container">
 
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
+        <div class="tictactoe-image"></div>
         <div class="tictactoe-image"></div>
         <div class="tictactoe-image"></div>
         <div class="tictactoe-image"></div>
@@ -64,6 +74,30 @@
     </div>
     </div>
 
+<div id="profile-modal" class="modal-htp">
+    <div class="modal-htp-content profile-modal-centered">
+        <span class="close-modal-htp">&times;</span>
+        <div class="profile-content">
+            {% if user.is_authenticated %}
+                <h2>Welcome, {{ user.username }}</h2>
+                <a href="{% url 'logout' %}" class="button">Logout</a>
+            {% else %}
+                <h2>Login</h2>
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <input type="text" name="username" placeholder="Username" required>
+                    <input type="password" name="password" placeholder="Password" required>
+                    <button type="submit" class="button">Login</button>
+                </form>
+                <p>Don't have an account?
+                    <a href="{% url 'signup' %}" class="text-link signup-link">Sign up</a>
+                </p>
+                <a href="{% url 'game:main_menu_guest' %}" class="button guest-button">Continue as Guest</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 
     </body>
 </html>
@@ -102,5 +136,38 @@
 
 .already-account {
     margin-top: 15px;
+}
+
+.signup-link {
+    color: #007bff;
+    text-decoration: underline;
+    font-weight: bold;
+}
+.signup-link:hover {
+    color: #0056b3;
+}
+
+/* Center profile modal content */
+.profile-modal-centered {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.profile-modal-centered .profile-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Profile button hover like help button */
+.profile-button {
+    transition: all 0.3s ease;
+}
+.profile-button:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 </style>

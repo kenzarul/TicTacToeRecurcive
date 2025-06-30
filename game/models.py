@@ -90,8 +90,7 @@ class Game(models.Model):
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
-        # Fix: Check for None before comparing to int
-        if main_index is None or sub_index is None or main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
+        if main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
         if self.board[main_index] != ' ':
             return None
@@ -100,11 +99,11 @@ class Game(models.Model):
         if not sub_game:
             raise ValueError("SubGame does not exist")
 
-        # Prevent move if subgame is won or full (draw)
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        # Extract the winner and winning_line from the SubGame play method
+        winner, winning_line = sub_game.play(sub_index, symbol)
         sub_game.save()
 
         self.last_main_index = main_index
@@ -122,11 +121,12 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
+        """
+        Set the active subgame index for the next move.
+        """
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
-            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None
@@ -193,6 +193,9 @@ class Game(models.Model):
             self.play(main_index, sub_index, next_symbol)
 
     def play(self, main_index, sub_index, symbol=None):
+        """
+        Handle a move in the game.
+        """
         if self.winner:
             raise ValidationError("Game is already over")
 
@@ -218,8 +221,7 @@ class Game(models.Model):
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
-        # Fix: Check for None before comparing to int
-        if main_index is None or sub_index is None or main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
+        if main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
         if self.board[main_index] != ' ':
             return None
@@ -228,11 +230,11 @@ class Game(models.Model):
         if not sub_game:
             raise ValueError("SubGame does not exist")
 
-        # Prevent move if subgame is won or full (draw)
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        # Extract the winner and winning_line from the SubGame play method
+        winner, winning_line = sub_game.play(sub_index, symbol)
         sub_game.save()
 
         self.last_main_index = main_index
@@ -250,11 +252,12 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
+        """
+        Set the active subgame index for the next move.
+        """
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
-            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None

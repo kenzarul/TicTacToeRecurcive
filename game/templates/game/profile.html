@@ -2,17 +2,20 @@
 
 {% block body %}
 <div class="profile-container" style="max-width: 600px; margin: 50px auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
-    <h2 style="font-size: 2.2rem;">👤 Mon Profil</h2>
+    <a href="{% url 'game:profile' %}" class="button">👤 Mon Profil</a>
 
     <p><strong>Nom d'utilisateur :</strong> {{ user.username }}</p>
 
     <h3 style="margin-top: 25px;">🎮 Historique de mes jeux :</h3>
     <ul style="list-style-type: none; padding: 0;">
         {% for game in games %}
-            <li>🕹️ Partie ID : {{ game.id }} | 📅 {{ game.date_created|date:"d M Y H:i" }}</li>
-        {% empty %}
-            <li>❌ Pas encore de parties jouées.</li>
-        {% endfor %}
+    <li>🕹️ Partie ID : {{ game.id }} | 📅 {{ game.date_created|date:"d M Y H:i" }} | 🏁 Résultat :
+        {% if game.result == "win" %} ✅ Victoire
+        {% elif game.result == "loss" %} ❌ Défaite
+        {% else %} ➖ Égalité
+        {% endif %}
+    </li>
+{% endfor %}
     </ul>
 
     <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">

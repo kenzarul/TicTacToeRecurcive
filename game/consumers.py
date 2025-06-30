@@ -3,6 +3,17 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
+from .models import GameHistory
+def record_game_result(winner, player_x, player_o):
+    if winner == "X":
+        GameHistory.objects.create(user=player_x, result="win")
+        GameHistory.objects.create(user=player_o, result="loss")
+    elif winner == "O":
+        GameHistory.objects.create(user=player_o, result="win")
+        GameHistory.objects.create(user=player_x, result="loss")
+    else:
+        GameHistory.objects.create(user=player_x, result="draw")
+        GameHistory.objects.create(user=player_o, result="draw")
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -173,6 +184,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'player_o': game_data['player_o'],
                 'time_x': game_data['remaining_x'],
                 'time_o': game_data['remaining_o'],
+<<<<<<< HEAD
             })
             await self.start_timer_loop()
 
@@ -226,8 +238,17 @@ class GameConsumer(AsyncWebsocketConsumer):
                     break
 
         self.timer_task = asyncio.create_task(countdown())
+=======
+                'active_index': game_data['active_index'],
+                'board': game_data['board'],
+            })
+            await self.start_timer_loop()
+>>>>>>> 80fa36bcfaecdfbd18afc7cad716b951378011e4
 
     async def move(self, event):
+        """
+        Notify the frontend about a move.
+        """
         await self.send(text_data=json.dumps({
             'type': 'move',
             'main_index': event['main_index'],
@@ -238,7 +259,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             'active_index': event['active_index'],
             'time_x': event['time_x'],
             'time_o': event['time_o'],
-            'winning_line': event.get('winning_line'),  # <-- pass through
         }))
 
     async def surrender_game(self, event):
@@ -268,6 +288,47 @@ class GameConsumer(AsyncWebsocketConsumer):
             'time_x': event['time_x'],
             'time_o': event['time_o'],
         }))
+
+    async def start_timer_loop(self):
+        """
+        Start a loop to decrement the timer for the current player.
+        """
+        if self.timer_task:
+            self.timer_task.cancel()
+
+        async def countdown():
+            while True:
+                await asyncio.sleep(1)
+                game = await self.get_game()
+                if not game or game.winner:
+                    break
+
+                current_player = game.next_player
+                await self.decrease_timer(game, current_player)
+
+                game_data = await self.get_game_data()
+                await self.channel_layer.group_send(self.group_name, {
+                    'type': 'update_timers',
+                    'time_x': game_data['remaining_x'],
+                    'time_o': game_data['remaining_o'],
+                })
+
+                if game_data['remaining_x'] <= 0:
+                    await self.channel_layer.group_send(self.group_name, {
+                        'type': 'surrender_game',
+                        'winner': 'O',
+                        'message': '⏰ X ran out of time. O wins!',
+                    })
+                    break
+                if game_data['remaining_o'] <= 0:
+                    await self.channel_layer.group_send(self.group_name, {
+                        'type': 'surrender_game',
+                        'winner': 'X',
+                        'message': '⏰ O ran out of time. X wins!',
+                    })
+                    break
+
+        self.timer_task = asyncio.create_task(countdown())
 
     # ---------------------------- Database Helpers ----------------------------
 
@@ -339,6 +400,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             'time_o': game.time_o,
             'remaining_x': game.remaining_x,
             'remaining_o': game.remaining_o,
+            'board': game.board,  # Include board state
         }
 
     @database_sync_to_async

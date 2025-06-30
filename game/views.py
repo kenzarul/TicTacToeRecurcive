@@ -6,6 +6,9 @@ from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from .models import GameHistory
 from django.http import JsonResponse
 
 from .forms import NewGameForm, PlayForm
@@ -19,6 +22,10 @@ def profile(request):
         Q(player_x=request.user.username) | Q(player_o=request.user.username)
     )
     return render(request, 'game/profile.html', {'user_games': user_games})
+@login_required
+def user_profile(request):
+    games = GameHistory.objects.filter(user=request.user).order_by('-date_created')
+    return render(request, "profile.html", {"games": games})
 
 def main_menu(request):
     return render(request, 'game/main_menu.html')

@@ -158,11 +158,36 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.vote_yes = {'X': False, 'O': False}
             self.vote_no = {'X': False, 'O': False}
 
+    async def handle_restart(self):
+        """
+        Handle the restart action by resetting the game state and notifying all players.
+        """
+        game = await self.get_game()
+        if game:
+            await self.reset_full_game()
+            game_data = await self.get_game_data()
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'restart_game',
+                'next_player': game_data['next_player'],
+                'player_x': game_data['player_x'],
+                'player_o': game_data['player_o'],
+                'time_x': game_data['remaining_x'],
+                'time_o': game_data['remaining_o'],
+            })
+            await self.start_timer_loop()
+
     async def restart_game(self, event):
+        """
+        Notify the frontend to restart the game.
+        """
         await self.send(text_data=json.dumps({
-            'type': 'restart'
+            'type': 'restart',
+            'next_player': event['next_player'],
+            'player_x': event['player_x'],
+            'player_o': event['player_o'],
+            'time_x': event['time_x'],
+            'time_o': event['time_o'],
         }))
-        await self.start_timer_loop()
 
     async def start_timer_loop(self):
         if self.timer_task:

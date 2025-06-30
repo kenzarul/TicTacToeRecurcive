@@ -3,7 +3,15 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
 from django.utils import timezone
+from django.db import models
+from django.contrib.auth.models import User
+class GameHistory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="games")
+    result = models.CharField(max_length=10, choices=[("win", "Win"), ("loss", "Loss"), ("draw", "Draw")])
+    date_created = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"{self.user.username} - {self.result} - {self.date_created}"
 
 class Game(models.Model):
     room_code = models.CharField(max_length=6, unique=True, null=True, blank=True)

@@ -690,10 +690,10 @@ button.modal-button {
 /* Button styling */
 .buttonpro {
     display: block;
-    width: 100%;
+    width: 80%;
     padding: 12px;
     margin: 10px 0;
-    background-color: #4CAF50;
+    background-color: #dc143c;
     color: white;
     text-align: center;
     border-radius: 5px;

@@ -184,7 +184,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'player_o': game_data['player_o'],
                 'time_x': game_data['remaining_x'],
                 'time_o': game_data['remaining_o'],
-<<<<<<< HEAD
+                'active_index': game_data['active_index'],
+                'board': game_data['board'],
             })
             await self.start_timer_loop()
 
@@ -238,12 +239,6 @@ class GameConsumer(AsyncWebsocketConsumer):
                     break
 
         self.timer_task = asyncio.create_task(countdown())
-=======
-                'active_index': game_data['active_index'],
-                'board': game_data['board'],
-            })
-            await self.start_timer_loop()
->>>>>>> 80fa36bcfaecdfbd18afc7cad716b951378011e4
 
     async def move(self, event):
         """

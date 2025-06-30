@@ -2,7 +2,7 @@
 
 {% block body %}
   <h2>Create Account</h2>
-  <form method="post">
+  <form method="post" id="signup-form">
     {% csrf_token %}
     <div>
       {{ form.username.label_tag }}
@@ -29,6 +29,13 @@
     </div>
 
     <button type="submit" class="button">Sign Up</button>
-    <a href="{% url 'login' %}" class="button">Login here</a>
   </form>
+  <script>
+    document.getElementById('signup-form').addEventListener('submit', function(e) {
+      // Allow the form to submit normally, then redirect after a short delay
+      setTimeout(function() {
+        window.location.href = "{% url 'game:main_menu' %}";
+      }, 100);
+    });
+  </script>
 {% endblock %}

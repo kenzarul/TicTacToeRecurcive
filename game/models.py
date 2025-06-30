@@ -155,13 +155,15 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
+        """
+        Reset the game state to its initial configuration.
+        """
         self.board = " " * 9
         self.last_main_index = None
         self.last_sub_index = None
         self.winner = None
         self.last_player = None
         self.active_index = None
-        # Reset remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = None
@@ -281,13 +283,15 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
+        """
+        Reset the game state to its initial configuration.
+        """
         self.board = " " * 9
         self.last_main_index = None
         self.last_sub_index = None
         self.winner = None
         self.last_player = None
         self.active_index = None
-        # Reset remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = None

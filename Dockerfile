@@ -1,15 +1,17 @@
-FROM python:3.9-slim-buster
+﻿# syntax=docker/dockerfile:1.13
+FROM python:3.13-slim
 
-ENV PIP_ROOT_USER_ACTION=ignore
-ENV PYTHONUNBUFFERED=1
-
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DJANGO_SETTINGS_MODULE='tictactoe.settings'
 
 WORKDIR /app
 
-COPY requirements.txt /app/
-RUN pip install --upgrade pip && pip install -r requirements.txt
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache pip install --upgrade pip && \
+    pip install --use-pep517 -r requirements.txt
 
+COPY . .
 
-COPY . /app/
 EXPOSE 8000
-CMD ["python", "manage.py", "runserver"]
+ENTRYPOINT ["bash", "/app/run.sh"]

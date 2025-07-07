@@ -1,0 +1,14 @@
+﻿version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: tictactoe
+    restart: unless-stopped
+    volumes:
+      - static:/app/staticfiles
+    ports:
+      - "8000:8000"
+
+volumes:
+  static:

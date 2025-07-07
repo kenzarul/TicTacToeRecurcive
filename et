@@ -1,0 +1,113 @@
+[33mb7b1797[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Changement l'adress de page de sign up
+[33mf13671b[m Changement le bar username et password dans profile
+[33m7329521[m Changement le bar username et password dans profile
+[33m80fa36b[m Save migration
+[33md2ba927[m[33m ([m[1;31morigin/main[m[33m)[m fix the tuple in the single player
+[33me088f07[m timer for restart fixed
+[33mc5ca860[m J'ai modifie la form de main menu pour qu'il montre le bouton single player et multiplayer et la bouton login en haut gauche de page
+[33m458e380[m Ajout du système d'historique des parties pour chaque utilisateur
+[33me1dc84a[m timer for restart fixed
+[33m2b5455d[m timer fixed
+[33m631797a[m comment removed
+[33md2b0233[m gitignore
+[33me727d5c[m Implement winning line tracking and highlight in UI; update play_move to return winner and winning line
+[33m6b3752f[m Enhance game logic and UI: add timer for human players, improve move validation, and implement AI loading overlay
+[33mde84583[m Add surrender button and waiting room timer; improve game result handling
+[33m64be507[m i have changed the waiting room so that it can accommodate all the players (only displayed when both are connected)
+[33m12ec725[m the game still have the problem to restart as it still store the information in the previous game
+[33m05db1db[m i have changed the interface for the 'code enter ' page
+[33m6621417[m  have changed the surrender page for the multiplayer so that each player can vote to replay the game :). and now if there is no respond from the player the game will quit the game and bring them ba ck to the main page
+[33mc72704e[m I updated the notion so that we can now block any illegal move by any player. for the database by Wassim, we have to delete all the files in the migrations and use the MYSQL instead of SQLite now.
+[33m253e4ac[m Migration du projet vers MySQL et vérification des utilisateurs
+[33m1577036[m i have changed the UI for the i have changed the animation to redirect the player to clicked the correct square
+[33mb8af2f1[m Je viens de resoudre un erreur de code
+[33m05297ea[m Merge branch 'main' of https://github.com/kenzarul/TicTacToeRecurcive
+[33m0bfe47e[m J'ai modifier les code de how_to_play pour qu'il devient comme une fenetre en assurant les jouer continue jouer apres click le bouton how to play
+[33m65f2cd7[m Résolution du conflit db.sqlite3 en gardant la version distante
+[33m06383a9[m Résolution du conflit local avant pull
+[33m89d3c0b[m i have changed the UI for the time option
+[33m5c051ad[m I have added the timer for each player. the player that created the code can now decide the time for each player (jus like chess)
+[33mc866b51[m i added the button to surrender so that if player dont want to continue the game, he can just surrender and terminate the game
+[33md258590[m i added the button to surrender so that if player dont want to continue the game, he can just surrender and terminate the game
+[33ma29443f[m i have updated the game logic so that the game can detect consecutive click
+[33m7d07982[m i have updated the single player and also the multiplayer. now ;both of them is working horrayyyy. now i m trying to chang ethe style for the multiplayer html page so that it has the same style as single player
+[33mc9e85b6[m nopw both players can play succefully but there are some bugs causing the game to sometimes stop[ playing although it is in a good sequence
+[33m6cd4b0c[m Merge branch 'main' of https://github.com/kenzarul/TicTacToeRecurcive
+[33mfbf2046[m J'ai ajoute le fonctionement whitenoise pour que quand on lance par daphne il va automatiquement lance la partie css et static
+[33me7b82a6[m Merge branch 'main' of https://github.com/kenzarul/TicTacToeRecurcive
+[33mc8b8de1[m J'ai modifie la coulour de la page how to play pour qu'il soit plus lisible
+[33md6ed6f8[m Ajout d'une migration locale
+[33mb08017b[m Ajout d'une migration locale
+[33md4ecc99[m J'ai modifie la page how to play pour qu'il soit plus lisible
+[33mebf3a3e[m J'ai ajoute un bouton pour voir une nouvelle page how_to_play pour expliquer qux utilisqteur comment pour jouer et gagner
+[33m6672cb6[m Merge branch 'main' of https://github.com/kenzarul/TicTacToeRecurcive
+[33m9514dbc[m Mise à jour du profil : suppression de l'email, ajout des boutons Retour et Déconnexion
+[33mf5c4d0e[m i have updated the game, to run , have to run migrate and then use "daphne tictactoe.asgi:application" to run the asgi. dont use runserver
+[33mc7987ff[m Merge branch 'main' of https://github.com/kenzarul/TicTacToeRecurcive
+[33m5378316[m Mise à jour de l'icône de création de compte
+[33m3761f1e[m the mismatch in the routing.py but there are still some problem in either consumer or routing.py
+[33m94b6363[m do not detect
+[33maba5f05[m Affichage historique de joueur
+[33m18b764c[m J'ai modifier les code dans css car il y a de bugs qui previent l'utilisation pour voir last-move fonctionnement
+[33mf875355[m J'ai modifier les code dans css et game_detail_3.html pour qu'il ajoute des indications qu'on peux jouer sur tous les sub box si le jouer precendent choisi la position que le box a ete gagne
+[33m2dba0f7[m Ajout du message personnalisé pour mot de passe trop simple
+[33m306572f[m teh gameconsumer does not detect that both players have been connected
+[33m7914f58[m first test of the new routing and consumers. i have updated the tests.html so that it functions. for now, the websocket has a problem
+[33mfcbda9c[m Amélioration de la page signup : nouveau design propre et moderne
+[33mf760ddb[m Modifier le bouton  Create one
+[33m3ab8be1[m mise a jour de login.html
+[33m9e9e555[m Ajout de validation HTML pour mot de passe
+[33m9aa9132[m mise a jour de base.html
+[33m48c6f8e[m Ajout d'un lien vers le projet GitHub dans le footer
+[33m91df9db[m Login updated
+[33m125c853[m Ajout du bouton 'jouer sans compte' et  correction signup
+[33m7b1235b[m change the index to test_index (still in development). the index file causing error in the deployment
+[33m984f203[m new test concerning index.html
+[33m3f782fe[m test
+[33mc6a3627[m new test
+[33m01b8f44[m correction to the file consumers.py, both routing.py and asgi.py
+[33m85b7c27[m Ajout du système de login + création de compte + redirection sécurisée
+[33m217904c[m Ameliorer la defense de l'algorithm de difficulte Legend et assurer que il va regarder si le jouer peux gagner par 3 carres diagonal aligne
+[33m07ca55a[m Fixer l'algorithm good player et legend pour qu'il bien fonctionner, deja teste et j'ai toujours perdu
+[33m04e7130[m Modifier le code affichage apres gagner pour verifier si l'algorithm ou jouer qui gagne et ajout l'animation pour le perdu
+[33me881200[m Ajout lien exit dans la bouton exit
+[33ma96ebad[m correction to the file consumers.py, both routing.py and asgi.py
+[33m4876e0c[m Modification l'animation de confetti  de fenetre qui apparaitre apres gagne
+[33mbd82e20[m Modification le colour de fenetre qui apparaitre apres gagne
+[33ma48fb90[m add the routing.py and remake consumers
+[33mcc6a58c[m add the routing.py and remake consumers
+[33mf094661[m Modification le colour de fenetre qui apparaitre apres gagne
+[33mcb7c7b0[m Resoudre les bugs des last_move_index par les ajouter dans la classe Game et j'ai ajoute une fenetre qui va apparaitre apres le jouer gagne le jeu
+[33mea0e6a1[m Resoudre les bugs des last_move_index par les ajouter dans la classe Game et j'ai ajoute une fenetre qui va apparaitre apres le jouer gagne le jeu
+[33me0defa6[m Resoudre les bugs des last_move_index par les ajouter dans la classe Game et j'ai ajoute une fenetre qui va apparaitre apres le jouer gagne le jeu
+[33meb3a544[m Ajouter une fenetre qui va apparaitre apres le joeur gagne dans game_detail_3.html
+[33mf9bea55[m modify the settings to include channels for websocket. change the consumers.py
+[33mf370aca[m add he consumers page but cannt be used yet. 0truying to set up the websocket
+[33mf77b35d[m Resoudre les bugs des last_move_index par les ajouter dans la classe Game et j'ai ajoute une fenetre qui va apparaitre apres le jouer gagne le jeu
+[33m5376d3e[m change the base.html to loop to render photo
+[33mc54d0d9[m change the name of the single_player file
+[33m7a86eae[m Resoudre les bugs des last_move_index par les ajouter dans la classe Game
+[33m8d4e6b9[m change the display of the game
+[33m76c9e45[m change the re_path to path in both urls.py files
+[33mfd8e9db[m test commit
+[33md2acfee[m added the main.py
+[33m953ccfa[m Ajouter une fonctionnement pour montrer la position que l'algorithm a joué en multicouleur; changement dans css ; et ajoute last_move_index dans la classe SubGame qui est situé dans models.py mais il y a des bugs
+[33mf0f3384[m Ajouter une fonctionnement pour montrer la position que l'algorithm a joué en multicouleur; changement dans css ; et ajoute last_move_index dans la classe SubGame qui est situé dans models.py mais il y a de bugs
+[33mcbbe33c[m Ajouter une fonctionnement pour montrer la position que l'algorithm a joué en multicouleur; changement dans css ; et ajoute last_move_index dans la classe SubGame qui est situé dans models.py
+[33m94d2034[m added the main.py
+[33m4be8b49[m the bug with value error is removed
+[33m2e9c93b[m L'ajout de fichier Dockerfile
+[33maedc245[m L'ajout de fichier Dockerfile
+[33medee746[m remove the legendplayer. have to change the valu eof depth to continue playing as it is not optimised.
+[33m06973d6[m tryingh to implement the working AI but still there are some errors. hopefully can function . should improve in the depth
+[33m801f8fc[m Modification petit sur l'interface de jeu
+[33md06f5c8[m Update the game logic and remove the IndexError
+[33mc7599fc[m Merge remote-tracking branch 'origin/main'
+[33m53bcce2[m Update the game logic
+[33m9d93a9b[m Integration entre les pages principales et le jeu tictactoe ont ete faites
+[33me8c9a44[m Integration entre les pages principales et le jeu tictactoe ont ete faites
+[33m69c99d1[m Implementation de jeu tictactoe dans les pages principale - pas finir
+[33m9204cb2[m Modification deuxieme fois pour l'interface principale de jeu
+[33m5494d7e[m Create README.md
+[33mdaa4995[m Delete README.md
+[33m84795ce[m Initial commit

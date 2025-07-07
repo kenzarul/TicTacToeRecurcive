@@ -4,17 +4,13 @@ from django.contrib.auth import logout
 from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from .models import GameHistory
-from django.http import JsonResponse
 
 from .forms import NewGameForm, PlayForm
 from .models import Game
-
-# ======================= Main Menu Views =======================
 
 @login_required
 def profile(request):

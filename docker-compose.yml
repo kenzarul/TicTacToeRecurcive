@@ -3,12 +3,45 @@
 services:
   web:
     build: .
-    container_name: tictactoe
+    container_name: django
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - static:/staticfiles
+      - media:/mediafiles
+    networks: [backend]
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx
     restart: unless-stopped
     volumes:
-      - static:/app/staticfiles
+      - static:/staticfiles:ro
+      - media:/mediafiles:ro
+      - ./compose/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on: [web]
     ports:
-      - "8000:8000"
+      - "8080:8080"
+    networks: [backend]
+
+  db:
+    image: postgres:16
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tictac
+      POSTGRES_USER: tictac
+      POSTGRES_PASSWORD: tictac
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [backend]
 
 volumes:
   static:
+  media:
+  pgdata:
+
+networks:
+  backend:

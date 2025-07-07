@@ -8,10 +8,12 @@ ENV PYTHONUNBUFFERED=1 \
 WORKDIR /app
 
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache pip install --upgrade pip && \
+RUN --mount=type=cache,target=/root/.cache \
+    pip install --upgrade pip && \
     pip install --use-pep517 -r requirements.txt
 
 COPY . .
 
 EXPOSE 8000
-ENTRYPOINT ["bash", "/app/run.sh"]
+HEALTHCHECK CMD curl -f http://localhost:8000/healthz/ || exit 1
+ENTRYPOINT ["/app/compose/entrypoint.sh"]

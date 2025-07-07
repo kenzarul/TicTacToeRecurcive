@@ -641,14 +641,25 @@ button.modal-button {
     background-color: #dc143c;
     color: white;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     text-align: center;
-    line-height: 40px;
     font-size: 24px;
     font-weight: bold;
     text-decoration: none;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     transition: all 0.3s ease;
+    overflow: hidden; /* Ensures image stays inside the circle */
+}
+
+.profile-button img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
 }
 
 .profile-button:hover {

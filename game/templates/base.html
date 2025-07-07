@@ -19,9 +19,11 @@
     <body>
 
     <a href="#" class="profile-button" id="profile-button"
-       data-auth="{% if user.is_authenticated %}true{% else %}false{% endif %}"
-       data-profile-url="{% url 'game:profile' %}">
-        {% if user.is_authenticated %}🧑‍🏫{% else %}👤{% endif %}
+        data-auth="{% if user.is_authenticated %}true{% else %}false{% endif %}"
+        data-profile-url="{% url 'game:profile' %}">
+        {% if user.is_authenticated %}
+        <img src="{% static 'images/gamer.png' %}" alt="Profile" style="width:100px; height:40px; vertical-align:middle;">
+        {% else %}👤{% endif %}
     </a>
 
     <a href="{% url 'game:how_to_play' %}" class="help-button" id="help-button">?</a>

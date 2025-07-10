@@ -5,7 +5,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from .models import Game, GameHistory
 from django.db.models import Q
+
 from django.http import JsonResponse
 
 from .forms import NewGameForm, PlayForm
@@ -15,11 +17,34 @@ from .models import Game
 
 @login_required
 def profile(request):
-    user_games = Game.objects.filter(
-        Q(player_x=request.user.username) | Q(player_o=request.user.username)
-    )
-    return render(request, 'game/profile.html', {'user_games': user_games})
+    # Get the base queryset without slicing
+    history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
 
+    # Calculate stats from the full queryset first
+    stats = {
+        'total': history_queryset.count(),
+        'wins': history_queryset.filter(result='win').count(),
+        'losses': history_queryset.filter(result='loss').count(),
+        'draws': history_queryset.filter(result='draw').count(),
+    }
+
+    # Calculate win percentage
+    if stats['total'] > 0:
+        stats['win_rate'] = round((stats['wins'] / stats['total']) * 100, 1)
+    else:
+        stats['win_rate'] = 0
+
+    # Now apply the slice for the template
+    history = history_queryset[:10]  # Only slice after all filtering is done
+
+    return render(request, 'game/profile.html', {
+        'history': history,
+        'total_games': stats['total'],
+        'wins': stats['wins'],
+        'losses': stats['losses'],
+        'draws': stats['draws'],
+        'win_rate': stats['win_rate']
+    })
 def main_menu(request):
     return render(request, 'game/main_menu.html')
 
@@ -41,11 +66,21 @@ def single_player(request):
     return render(request, 'game/single_player.html')
 
 @require_http_methods(["GET", "POST"])
+@login_required
 def index(request):
     if request.method == "POST":
         form = NewGameForm(request.POST)
         if form.is_valid():
-            game = form.create()
+            # Create the game with human player vs computer
+            game = Game.objects.create(
+                player_x=request.user.username,  # Human player
+                player_o='random',               # AI opponent (use 'random' or 'minimax')
+                board=" " * 9,
+                time_x=300,
+                time_o=300,
+                remaining_x=300,
+                remaining_o=300
+            )
             game.create_subgames()
             game.play_auto()
             game.save()
@@ -53,7 +88,6 @@ def index(request):
     else:
         form = NewGameForm()
     return render(request, 'game/single_player.html', {'form': form})
-
 # ======================= Multiplayer Views =======================
 
 def multiplayer(request):
@@ -122,9 +156,11 @@ def game(request, pk):
     if request.method == "POST":
         form = PlayForm(request.POST)
         if form.is_valid():
-            game.play(form.cleaned_data['main_index'], form.cleaned_data['sub_index'])
-            game.play_auto()
-            game.save()
+            # Only process move if game isn't already over
+            if not game.winner:
+                game.play(form.cleaned_data['main_index'], form.cleaned_data['sub_index'])
+                game.play_auto()
+                game.save()
             return redirect('game:detail', pk=pk)
 
     context = {
@@ -170,3 +206,5 @@ def restart_game(request):
     except Game.DoesNotExist:
         pass  # Handle the case where the game does not exist
     return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page
+
+

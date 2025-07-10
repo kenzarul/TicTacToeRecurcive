@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 
 class Game(models.Model):
@@ -126,19 +127,20 @@ class Game(models.Model):
                 self.active_index = index
 
     def create_subgames(self):
-        if not self.player_x or not self.player_o:
+        # Allow computer as a valid player
+        if not self.player_x or (not self.player_o and self.player_o != 'computer'):
             raise ValueError("Cannot create subgames without both player_x and player_o")
+
         self.sub_games.all().delete()
         for i in range(9):
             SubGame.objects.create(
                 game=self,
                 index=i,
                 player_x=self.player_x,
-                player_o=self.player_o
+                player_o=self.player_o if self.player_o != 'computer' else None
             )
         self.board = " " * 9
         self.last_player = None
-        # Initialize remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()
@@ -174,15 +176,29 @@ class Game(models.Model):
         if not self.is_game_over:
             next_symbol = self.next_player
             player = self.player_x if next_symbol == 'X' else self.player_o
-            if player == 'human':
+
+            # Skip if the player is a human (username)
+            if player and player not in ['random', 'minimax', 'computer']:
                 return
+
             from game.players import get_player
-            player_obj = get_player(player)
-            main_index = self.active_index if self.active_index is not None else random.choice(
-                [i for i, v in enumerate(self.board) if v == ' '])
-            sub_game = self.sub_games.filter(index=main_index).first()
-            sub_index = player_obj.play(sub_game, next_symbol)
-            self.play(main_index, sub_index, next_symbol)
+            try:
+                player_obj = get_player(player)
+                main_index = self.active_index if self.active_index is not None else random.choice(
+                    [i for i, v in enumerate(self.board) if v == ' '])
+                sub_game = self.sub_games.filter(index=main_index).first()
+                sub_index = player_obj.play(sub_game, next_symbol)
+                self.play(main_index, sub_index, next_symbol)
+            except Exception as e:
+                print(f"Error in auto play: {e}")  # For debugging
+                # Fallback to random if something goes wrong
+                from game.players import RandomPlayer
+                player_obj = RandomPlayer()
+                main_index = self.active_index if self.active_index is not None else random.choice(
+                    [i for i, v in enumerate(self.board) if v == ' '])
+                sub_game = self.sub_games.filter(index=main_index).first()
+                sub_index = player_obj.play(sub_game, next_symbol)
+                self.play(main_index, sub_index, next_symbol)
 
     def play(self, main_index, sub_index, symbol=None):
         if self.winner:
@@ -348,14 +364,11 @@ class SubGame(models.Model):
         board = list(self.board)
         board[index] = symbol
         self.board = ''.join(board)
-
         self.last_move_index = index
         self.save()
-        winner = self.is_game_over
-        winning_line = None
-        if winner in ('X', 'O'):
-            winning_line = self.get_winning_line()
-        return (winner, winning_line)
+
+        # Return just the winner symbol (or None)
+        return self.is_game_over
 
     def play_auto(self):
         if not self.is_game_over:
@@ -369,3 +382,30 @@ class SubGame(models.Model):
             self.play(sub_index, next_symbol)
             self.last_move_index = sub_index
             self.save()
+
+
+class GameHistory(models.Model):
+    MODE_CHOICES = [
+        ('single', 'Single Player'),
+        ('multi', 'Multiplayer'),
+    ]
+
+    RESULT_CHOICES = [
+        ('win', 'Win'),
+        ('loss', 'Loss'),
+        ('draw', 'Draw'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='game_history')
+    opponent = models.CharField(max_length=150, blank=True)
+    mode = models.CharField(max_length=10, choices=MODE_CHOICES)
+    result = models.CharField(max_length=10, choices=RESULT_CHOICES)
+    date_played = models.DateTimeField(auto_now_add=True)
+    duration = models.DurationField(null=True, blank=True)  # Track game duration
+    moves = models.PositiveIntegerField(default=0)  # Track number of moves
+
+    class Meta:
+        ordering = ['-date_played']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_mode_display()} - {self.result}"

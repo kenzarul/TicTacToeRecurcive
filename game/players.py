@@ -133,10 +133,23 @@ class LegendPlayer:
 
 
 def get_player(player_name):
-    if player_name == 'game.players.RandomPlayer':
-        return RandomPlayer()
-    elif player_name == 'game.players.GoodPlayer':
-        return GoodPlayer()
-    elif player_name == 'game.players.LegendPlayer':
-        return LegendPlayer()
-    raise ValueError(f"Unknown player: {player_name}")
+    # Handle case where player_name is a username (not an AI player)
+    if player_name not in ['random', 'minimax', 'computer', 'game.players.RandomPlayer', 'game.players.GoodPlayer',
+                           'game.players.LegendPlayer']:
+        return RandomPlayer()  # Fallback to random AI
+
+    # Map player types to their classes
+    player_types = {
+        'random': RandomPlayer,
+        'computer': RandomPlayer,
+        'minimax': LegendPlayer,
+        'game.players.RandomPlayer': RandomPlayer,
+        'game.players.GoodPlayer': GoodPlayer,
+        'game.players.LegendPlayer': LegendPlayer
+    }
+
+    player_class = player_types.get(player_name.lower())
+    if player_class is None:
+        return RandomPlayer()  # Default fallback
+
+    return player_class()

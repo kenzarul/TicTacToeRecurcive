@@ -33,10 +33,21 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
         game = await self.get_game()
-        if game.player_x and game.player_o and not await self.subgames_exist(game):
-            await self.create_subgames(game)
-            await self.channel_layer.group_send(self.group_name, {'type': 'start_game'})
-            await self.start_timer_loop()
+        if game.player_x and game.player_o:
+            if not await self.subgames_exist(game):
+                await self.create_subgames(game)
+                await self.start_timer_loop()
+            game_data = await self.get_game_data()
+            # BEGIN CHANGES: Send "start_game" message to all group members instead of a single send.
+            await self.channel_layer.group_send(self.group_name, {
+                'type': 'start_game',
+                'next_player': game_data['next_player'],
+                'player_x': game_data['player_x'],
+                'player_o': game_data['player_o'],
+                'time_x': game_data['remaining_x'],
+                'time_o': game_data['remaining_o'],
+            })
+            # END CHANGES
         else:
             await self.send(text_data=json.dumps({
                 'type': 'waiting',
@@ -50,6 +61,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.timer_task:
             self.timer_task.cancel()
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        # Removed resetting player assignment to allow re-connection for room creator.
 
     async def start_game(self, event):
         game_data = await self.get_game_data()
@@ -93,7 +105,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
 
         try:
-            # --- CHANGED: get both winner and winning_line from play_move ---
             winner, winning_line = await self.play_move(game, main_index, sub_index, player)
         except Exception as e:
             await self.send(text_data=json.dumps({
@@ -115,9 +126,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'active_index': game_data['active_index'],
                 'time_x': game_data['time_x'],
                 'time_o': game_data['time_o'],
-                'winning_line': list(winning_line) if winning_line else None,  # <-- send winning_line
+                'winning_line': list(winning_line) if winning_line else None,
             }
         )
+
+        # Replace the HTTP request approach with our direct database call
+        if game_data['winner']:
+            await self.record_game_result(game, game_data['winner'])
 
         if not game_data['winner']:
             await self.start_timer_loop()
@@ -137,17 +152,11 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': f"{surrendering_player} surrendered. {winner} wins!",
             }
         )
-        # --- Register result in GameHistory ---
+
+        # Replace HTTP request with direct database call
         if game:
-            async with aiohttp.ClientSession() as session:
-                await session.post(
-                    'http://localhost:8000/game/register_multiplayer_result/',
-                    data={
-                        'room_code': game.room_code,
-                        'winner': winner,
-                        'loser': surrendering_player,
-                    }
-                )
+            await self.record_game_result(game, winner)
+
         # Do NOT reset the game state here. Wait for replay votes.
 
     async def handle_vote(self, data):
@@ -307,16 +316,36 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def assign_player(self, game):
-        # Use "Guest" if user is not authenticated
-        player_identifier = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest"
+        # If user is authenticated, check if already assigned.
+        if self.scope["user"].is_authenticated:
+            username = self.scope["user"].username
+            if game.player_x == username:
+                return 'X'
+            elif game.player_o == username:
+                return 'O'
+        else:
+            # For anonymous users, we can use a similar check based on a session id or unique identifier.
+            # Here we simply check if either guest slot is already filled with any guest value.
+            # In a real app, you might store guest IDs in the session.
+            pass  # ...existing logic for non-authenticated users...
+
+        # Assign new player if not already assigned.
         if not game.player_x:
-            game.player_x = player_identifier
+            user_id = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest_1"
+            game.player_x = user_id
             game.save()
             return 'X'
         elif not game.player_o:
-            game.player_o = player_identifier
+            user_id = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest_2"
+            game.player_o = user_id
             game.save()
             return 'O'
+        # If both players are already assigned, reassign if the connecting user matches an existing one.
+        if self.scope["user"].is_authenticated:
+            if game.player_x == self.scope["user"].username:
+                return 'X'
+            elif game.player_o == self.scope["user"].username:
+                return 'O'
         return None
 
     @database_sync_to_async
@@ -387,3 +416,96 @@ class GameConsumer(AsyncWebsocketConsumer):
     def set_game_winner(self, game, winner):
         game.winner = winner
         game.save()
+
+    # Add new utility method for recording game results directly
+    @database_sync_to_async
+    def record_game_result(self, game, winner):
+        """
+        Record game result for both players in GameHistory with improved deduplication
+        """
+        from django.contrib.auth.models import User
+        from .models import GameHistory
+        import time
+        import random
+        from django.db import transaction
+        from django.utils import timezone
+        from datetime import timedelta
+
+        # Try to get both user objects
+        player_x_obj = None
+        player_o_obj = None
+
+        if game.player_x:
+            try:
+                player_x_obj = User.objects.get(username=game.player_x)
+            except User.DoesNotExist:
+                pass
+
+        if game.player_o:
+            try:
+                player_o_obj = User.objects.get(username=game.player_o)
+            except User.DoesNotExist:
+                pass
+
+        # Skip if neither player is a registered user
+        if not player_x_obj and not player_o_obj:
+            return
+
+        # Get exact timestamp for this game result - more precise than int(time.time())
+        now = timezone.now()
+        time_str = now.strftime("%Y%m%d%H%M%S%f")
+
+        # Create a precise game identifier that includes timestamp to microsecond precision
+        precise_game_id = f"{game.room_code}_{time_str}"
+
+        # Map players to their symbols and results
+        player_results = {}
+
+        # Record which player is X and which is O
+        if player_x_obj:
+            player_results[player_x_obj.username] = {"symbol": "X", "user_obj": player_x_obj}
+        if player_o_obj:
+            player_results[player_o_obj.username] = {"symbol": "O", "user_obj": player_o_obj}
+
+        # Determine result for each player based on winner
+        if winner == 'draw':
+            for username in player_results:
+                player_results[username]["result"] = 'draw'
+        else:
+            # Winner gets 'win', other player gets 'loss'
+            for username, data in player_results.items():
+                if data["symbol"] == winner:
+                    player_results[username]["result"] = 'win'
+                else:
+                    player_results[username]["result"] = 'loss'
+
+        # Use a transaction to ensure atomicity
+        with transaction.atomic():
+            # Look for any recent records (within last minute) with same result to avoid duplicates
+            recent_time = now - timedelta(minutes=1)
+
+            # Create history entries for each player
+            for username, data in player_results.items():
+                opponent_username = game.player_o if username == game.player_x else game.player_x
+
+                # Check for recent entries with same characteristics
+                existing_records = GameHistory.objects.filter(
+                    user=data["user_obj"],
+                    opponent=opponent_username,
+                    mode='multi',
+                    result=data["result"],
+                    date_played__gte=recent_time
+                )
+
+                # Only create if no matching recent record exists
+                if not existing_records.exists():
+                    GameHistory.objects.create(
+                        user=data["user_obj"],
+                        opponent=opponent_username or "Unknown",
+                        mode='multi',
+                        result=data["result"],
+                        game_identifier=precise_game_id
+                    )
+                    print(f"Created game history: {username} vs {opponent_username}, Result: {data['result']}, Game ID: {precise_game_id}")
+                else:
+                    print(f"Skipped duplicate game history for: {username} vs {opponent_username}, Game ID: {precise_game_id}")

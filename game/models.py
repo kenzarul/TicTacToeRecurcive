@@ -167,6 +167,9 @@ class Game(models.Model):
         """
         Reset the game state to its initial configuration.
         """
+        # NEW: Update date_created so subsequent rounds are logged separately
+        from django.utils import timezone
+        self.date_created = timezone.now()
         self.board = " " * 9
         self.last_main_index = None
         self.last_sub_index = None
@@ -309,6 +312,9 @@ class Game(models.Model):
         """
         Reset the game state to its initial configuration.
         """
+        # NEW: Update date_created so subsequent rounds are logged separately
+        from django.utils import timezone
+        self.date_created = timezone.now()
         self.board = " " * 9
         self.last_main_index = None
         self.last_sub_index = None
@@ -420,9 +426,14 @@ class GameHistory(models.Model):
     date_played = models.DateTimeField(auto_now_add=True)
     duration = models.DurationField(null=True, blank=True)  # Track game duration
     moves = models.PositiveIntegerField(default=0)  # Track number of moves
+    # BEGIN CHANGES: New field to uniquely identify each multiplayer game round.
+    game_identifier = models.CharField(max_length=50, blank=True, null=True)
+    # END CHANGES
 
     class Meta:
         ordering = ['-date_played']
 
+    # BEGIN CHANGES: Updated __str__ to include game_identifier if available.
     def __str__(self):
-        return f"{self.user.username} - {self.get_mode_display()} - {self.result}"
+        gid = f" | Game {self.game_identifier}" if self.game_identifier else ""
+        return f"{self.user.username}{gid} - {self.get_mode_display()} - {self.result}"

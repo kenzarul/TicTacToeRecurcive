@@ -24,7 +24,7 @@ def profile(request):
     else:
         history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
 
-    # --- Deduplicate history by (opponent, mode, result, date_played rounded to minute) ---
+    # --- Deduplicate history with game_identifier to preserve unique games ---
     seen = set()
     deduped_history = []
     for game in history_queryset:
@@ -32,7 +32,8 @@ def profile(request):
             (game.opponent or '').lower(),
             game.mode,
             game.result,
-            game.date_played.strftime('%Y%m%d%H%M')  # round to minute
+            game.date_played.strftime('%Y%m%d%H%M'),  # round to minute
+            game.game_identifier  # Include game_identifier in the key
         )
         if key not in seen:
             seen.add(key)
@@ -74,18 +75,37 @@ def how_to_play(request):
         return render(request, 'game/how_to_play_full.html')
 
 def single_player(request):
-    return render(request, 'game/single_player.html')
+    guest = request.GET.get('guest', None)
+    # guest flag can be used in the template if needed
+    return render(request, 'game/single_player.html', {'guest': guest})
 
 @require_http_methods(["GET", "POST"])
-@login_required
 def index(request):
     if request.method == "POST":
+        # If difficulty is provided, use it to create game (for guest and authenticated alike)
+        difficulty = request.POST.get("difficulty")
+        if difficulty:
+            player_x = request.user.username if request.user.is_authenticated else "Guest"
+            game = Game.objects.create(
+                player_x=player_x,
+                player_o=difficulty,  # Use selected difficulty e.g. 'random' or 'minimax'
+                board=" " * 9,
+                time_x=300,
+                time_o=300,
+                remaining_x=300,
+                remaining_o=300
+            )
+            game.create_subgames()
+            game.play_auto()
+            game.save()
+            return redirect(game)
+        # Otherwise fallback to processing the NewGameForm (if used)
         form = NewGameForm(request.POST)
         if form.is_valid():
-            # Create the game with human player vs computer
+            player_x = request.user.username if request.user.is_authenticated else "Guest"
             game = Game.objects.create(
-                player_x=request.user.username,  # Human player
-                player_o='random',               # AI opponent (use 'random' or 'minimax')
+                player_x=player_x,
+                player_o='random',  # default AI opponent
                 board=" " * 9,
                 time_x=300,
                 time_o=300,
@@ -172,27 +192,43 @@ def game(request, pk):
             ai_symbol = 'O' if user_symbol == 'X' else 'X'
             game.winner = ai_symbol
             game.save()
-            # Log defeat in GameHistory if not already logged
-            if request.user.is_authenticated and request.user.username.lower() not in ['random', 'minimax', 'computer']:
-                opponent = game.player_o if user_symbol == 'X' else game.player_x
-                mode = 'single' if opponent and opponent.lower() in ['random', 'minimax', 'computer'] else 'multi'
-                already_logged = GameHistory.objects.filter(
-                    user=request.user,
-                    opponent="Computer" if mode == 'single' else opponent,
-                    mode=mode,
-                    date_played__gte=game.date_created
-                ).exists()
-                if not already_logged:
-                    GameHistory.objects.create(
-                        user=request.user,
-                        opponent="Computer" if mode == 'single' else opponent,
-                        mode=mode,
-                        result='loss'
-                    )
+            # Log defeat for both players if they are authenticated and not AI
+            from django.contrib.auth.models import User
+            if request.user.is_authenticated:
+                for uname in [game.player_x, game.player_o]:
+                    if not uname:
+                        continue
+                    if uname.lower() in ['random', 'minimax', 'computer']:
+                        continue
+                    try:
+                        user_obj = User.objects.get(username=uname)
+                    except User.DoesNotExist:
+                        continue
+                    symbol = 'X' if uname == game.player_x else 'O'
+                    if game.winner in ['draw', ' ']:
+                        result = 'draw'
+                    elif game.winner == symbol:
+                        result = 'win'
+                    else:
+                        result = 'loss'
+                    opponent = game.player_o if uname == game.player_x else game.player_x
+                    if opponent and opponent.lower() in ['random', 'minimax', 'computer']:
+                        opponent = "Computer"
+                    if not GameHistory.objects.filter(
+                        user=user_obj,
+                        opponent=opponent,
+                        mode=('single' if opponent == "Computer" else 'multi'),
+                        date_played__gte=game.date_created
+                    ).exists():
+                        GameHistory.objects.create(
+                            user=user_obj,
+                            opponent=opponent,
+                            mode=('single' if opponent == "Computer" else 'multi'),
+                            result=result
+                        )
         # --- Redirect to detail page to show result modal ---
         return redirect('game:detail', pk=pk)
 
-    # Only process move form if not a surrender POST
     if request.method == "POST" and not request.POST.get("surrender"):
         form = PlayForm(request.POST)
         if form.is_valid():
@@ -201,39 +237,46 @@ def game(request, pk):
 
             if not game.winner:
                 player_symbol = 'X' if game.player_x == request.user.username else 'O'
-
                 try:
                     game.play(main_index, sub_index, player_symbol)
                     game.play_auto()
                 except Exception as e:
                     print("Error during move:", e)
 
-            # --- FIX: Only log for human user, not for computer, and only once per game ---
-            if game.winner and request.user.is_authenticated:
-                user_symbol = 'X' if game.player_x == request.user.username else 'O'
-                opponent = game.player_o if user_symbol == 'X' else game.player_x
-                # Only log if the current user is not a computer/AI
-                if request.user.username.lower() not in ['random', 'minimax', 'computer']:
-                    # Only log if not already logged for this user and this game
-                    mode = 'single' if opponent and opponent.lower() in ['random', 'minimax', 'computer'] else 'multi'
-                    already_logged = GameHistory.objects.filter(
-                        user=request.user,
-                        opponent="Computer" if mode == 'single' else opponent,
-                        mode=mode,
+            # --- NEW: Log game history for BOTH players once game ends ---
+            if game.winner:
+                from django.contrib.auth.models import User
+                for uname in [game.player_x, game.player_o]:
+                    if not uname:
+                        continue
+                    if uname.lower() in ['random', 'minimax', 'computer']:
+                        continue
+                    try:
+                        user_obj = User.objects.get(username=uname)
+                    except User.DoesNotExist:
+                        continue
+                    symbol = 'X' if uname == game.player_x else 'O'
+                    if game.winner in ['draw', ' ']:
+                        result = 'draw'
+                    elif game.winner == symbol:
+                        result = 'win'
+                    else:
+                        result = 'loss'
+                    opponent = game.player_o if uname == game.player_x else game.player_x
+                    if opponent and opponent.lower() in ['random', 'minimax', 'computer']:
+                        opponent = "Computer"
+                    if not GameHistory.objects.filter(
+                        user=user_obj,
+                        opponent=opponent,
+                        mode=('single' if opponent == "Computer" else 'multi'),
                         date_played__gte=game.date_created
-                    ).exists()
-                    if not already_logged:
-                        result = (
-                            'draw' if game.winner == ' ' or game.winner == 'draw' else
-                            'win' if game.winner == user_symbol else 'loss'
-                        )
+                    ).exists():
                         GameHistory.objects.create(
-                            user=request.user,
-                            opponent="Computer" if mode == 'single' else opponent,
-                            mode=mode,
+                            user=user_obj,
+                            opponent=opponent,
+                            mode=('single' if opponent == "Computer" else 'multi'),
                             result=result
                         )
-
             return redirect('game:detail', pk=pk)
 
     context = {
@@ -292,31 +335,55 @@ def register_multiplayer_result(request):
     """
     if request.method == "POST":
         room_code = request.POST.get("room_code")
-        winner = request.POST.get("winner")
-        loser = request.POST.get("loser")
+        winner_symbol = request.POST.get("winner")  # 'X', 'O', or 'draw'
+        loser_symbol = request.POST.get("loser")    # 'X', 'O', or 'draw'
+
         try:
             game = Game.objects.get(room_code=room_code)
-            # Only log if not already logged for this game and user
-            for username, result in [(winner, 'win'), (loser, 'loss')]:
-                user = None
-                try:
-                    user = User.objects.get(username=username)
-                except User.DoesNotExist:
-                    continue
-                opponent = loser if username == winner else winner
-                already_logged = GameHistory.objects.filter(
-                    user=user,
-                    opponent=opponent,
-                    mode='multi',
-                    date_played__gte=game.date_created
-                ).exists()
-                if not already_logged:
-                    GameHistory.objects.create(
-                        user=user,
-                        opponent=opponent,
-                        mode='multi',
-                        result=result
-                    )
+            from django.contrib.auth.models import User
+
+            # Get the actual player usernames based on symbols
+            if winner_symbol == 'draw':
+                # Handle draw case - create records for both players
+                for player_username, opponent_username in [(game.player_x, game.player_o), (game.player_o, game.player_x)]:
+                    if not player_username:
+                        continue
+                    try:
+                        user_obj = User.objects.get(username=player_username)
+                        GameHistory.objects.create(
+                            user=user_obj,
+                            opponent=opponent_username if opponent_username else "Unknown",
+                            mode='multi',
+                            result='draw',
+                            game_identifier=room_code  # Use room_code as unique identifier
+                        )
+                    except User.DoesNotExist:
+                        continue
+            else:
+                # Handle win/loss case
+                # Map symbols to actual usernames
+                winner_username = game.player_x if winner_symbol == 'X' else game.player_o
+                loser_username = game.player_o if winner_symbol == 'X' else game.player_x
+
+                # Create records for both winner and loser
+                for username, result, opponent in [
+                    (winner_username, 'win', loser_username),
+                    (loser_username, 'loss', winner_username)
+                ]:
+                    if not username:
+                        continue
+                    try:
+                        user_obj = User.objects.get(username=username)
+                        GameHistory.objects.create(
+                            user=user_obj,
+                            opponent=opponent if opponent else "Unknown",
+                            mode='multi',
+                            result=result,
+                            game_identifier=room_code  # Use room_code as unique identifier
+                        )
+                    except User.DoesNotExist:
+                        continue
+
             return HttpResponse("OK")
         except Exception as e:
             return HttpResponse(f"Error: {e}", status=400)

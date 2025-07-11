@@ -17,10 +17,6 @@
     <span style="font-size:18px;">⏱ O: <span id="timer-o">5:00</span></span>
   {% endif %}
 </div>
-<!-- NEW: Current time display -->
-<div id="current-time-display" style="text-align:center; font-size:18px; margin-bottom:20px;">
-  Current Time: <span id="current-time"></span>
-</div>
 
 <!-- Game Result Modal -->
 <div id="gameResultModal" class="modal" style="display: none;">
@@ -53,6 +49,29 @@
 @keyframes spin {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
+}
+
+/* Confetti animation styles */
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #FFC107;
+  border-radius: 50%;
+  animation: confetti-fall 3s ease-in-out infinite;
+  z-index: 10;
+  opacity: 0.8;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px) rotate(360deg);
+    opacity: 0;
+  }
 }
 </style>
 
@@ -351,10 +370,10 @@ function updateTimerDisplay() {
 }
 
 function startSinglePlayerTimer() {
-  if (timerInterval) clearInterval(timerInterval);
+  // Start the countdown only once for the whole game
+  if (timerInterval) return;  // Prevent reinitializing the timer
   updateTimerDisplay();
   timerInterval = setInterval(() => {
-    // Remove any condition preventing countdown by humanSymbol
     timer--;
     updateTimerDisplay();
     if (timer <= 0) {
@@ -366,17 +385,8 @@ function startSinglePlayerTimer() {
   }, 1000);
 }
 
-// NEW: Function to update the current time display
-function updateCurrentTime() {
-    var now = new Date();
-    var timeString = now.toLocaleTimeString();
-    document.getElementById("current-time").textContent = timeString;
-}
-setInterval(updateCurrentTime, 1000);
-updateCurrentTime();
-
 document.addEventListener('DOMContentLoaded', function() {
-    startSinglePlayerTimer();
+    startSinglePlayerTimer();  // Called once when page loads
 });
 
 // In showResultModal, ensure lost result shows "💀 You Lose! 💀"
@@ -384,6 +394,10 @@ function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
+    const confettiContainer = document.querySelector('.confetti-container');
+
+    // Clear any previous confetti
+    confettiContainer.innerHTML = '';
 
     if (result === "draw") {
         title.textContent = '🎉 Game Over! 🎉';
@@ -391,6 +405,9 @@ function showResultModal(result, msg) {
     } else if (result === "X" || result === "O") {
         if (result === humanSymbol) {
             title.textContent = '🎉 You Win! 🎉';
+            // Create confetti for win!
+            createConfetti();
+            playConfettiSound();
         } else {
             title.textContent = '💀 You Lose! 💀';
         }
@@ -405,6 +422,39 @@ function showResultModal(result, msg) {
     document.querySelector('.modal-content').classList.add('slide-down');
 }
 
+// Add confetti creation function
+function createConfetti() {
+    const confettiContainer = document.querySelector('.confetti-container');
+    const colors = ['#FFC107', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0', '#3F51B5'];
+
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confetti.style.animationDelay = Math.random() * 1 + 's';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+        // Random shapes
+        if (Math.random() > 0.5) {
+            confetti.style.borderRadius = '0';
+            confetti.style.width = (Math.random() * 6 + 4) + 'px';
+            confetti.style.height = (Math.random() * 6 + 4) + 'px';
+            confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        }
+
+        confettiContainer.appendChild(confetti);
+    }
+}
+
+// Add sound function
+function playConfettiSound() {
+    const sound = document.getElementById('confettiSound');
+    sound.volume = 0.3;
+    sound.currentTime = 0;
+    sound.play().catch(err => console.log('Sound play failed:', err));
+}
+
 function showAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'flex';
 }
@@ -415,4 +465,3 @@ function hideAILoading() {
 </script>
 
 {% endblock %}
-

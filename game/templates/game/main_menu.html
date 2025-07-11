@@ -4,7 +4,8 @@
 {% block body %}
     <h1>TIC TAC TOE</h1>
     <div class="game-options">
-        <a href="{% url 'game:index' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:index' %}')">Single Player</a>
+        <!-- Single Player: Redirect to level selection for guest mode -->
+        <a href="{% url 'game:single_player' %}?guest=1" class="button" onclick="navigateWithSound(event, '{% url 'game:single_player' %}?guest=1')">Single Player</a>
         <a href="{% url 'game:multiplayer' %}" class="button" onclick="navigateWithSound(event, '{% url 'game:multiplayer' %}')">MultiPlayer</a>
     </div>
 {% endblock %}

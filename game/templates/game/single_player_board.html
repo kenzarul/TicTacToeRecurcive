@@ -9,12 +9,12 @@
   </form>
 </div>
 
-<!-- Timer display: Only for human player -->
+<!-- Timer display: for current user -->
 <div id="timer-panel" style="text-align:center; margin-bottom: 20px;">
-  {% if game.player_x == 'human' %}
+  {% if current_user == game.player_x %}
     <span style="font-size:18px;">⏱ X: <span id="timer-x">5:00</span></span>
-  {% elif game.player_o == 'human' %}
-    <span style="font-size:18px;">⏱ O: <span id="timer-x">5:00</span></span>
+  {% elif current_user == game.player_o %}
+    <span style="font-size:18px;">⏱ O: <span id="timer-o">5:00</span></span>
   {% endif %}
 </div>
 <!-- NEW: Current time display -->
@@ -330,14 +330,15 @@
 let timer = 300;
 let timerInterval = null;
 let currentTurn = "{{ game.next_player }}";
-{% if game.player_x == 'human' %}
+{% if current_user == game.player_x %}
   const humanSymbol = "X";
-{% elif game.player_o == 'human' %}
+{% elif current_user == game.player_o %}
   const humanSymbol = "O";
 {% else %}
   const humanSymbol = null;
 {% endif %}
-let gameOver = {% if game.is_game_over %}true{% else %}false{% endif %};
+// Use proper timer element based on humanSymbol
+const timerElId = humanSymbol === "X" ? "timer-x" : "timer-o";
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -346,18 +347,14 @@ function formatTime(seconds) {
 }
 
 function updateTimerDisplay() {
-  document.getElementById("timer-x").textContent = formatTime(timer);
+  document.getElementById(timerElId).textContent = formatTime(timer);
 }
 
 function startSinglePlayerTimer() {
   if (timerInterval) clearInterval(timerInterval);
   updateTimerDisplay();
-  // Start a single countdown for the entire game rather than per move
   timerInterval = setInterval(() => {
-    if (gameOver) {
-      clearInterval(timerInterval);
-      return;
-    }
+    // Remove any condition preventing countdown by humanSymbol
     timer--;
     updateTimerDisplay();
     if (timer <= 0) {
@@ -375,7 +372,6 @@ function updateCurrentTime() {
     var timeString = now.toLocaleTimeString();
     document.getElementById("current-time").textContent = timeString;
 }
-// Start updating current time every second
 setInterval(updateCurrentTime, 1000);
 updateCurrentTime();
 
@@ -383,17 +379,21 @@ document.addEventListener('DOMContentLoaded', function() {
     startSinglePlayerTimer();
 });
 
+// In showResultModal, ensure lost result shows "💀 You Lose! 💀"
 function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
 
-    // Set title and message based on result (simplified version)
     if (result === "draw") {
         title.textContent = '🎉 Game Over! 🎉';
         message.textContent = msg || 'The game ended in a stalemate!';
     } else if (result === "X" || result === "O") {
-        title.textContent = result === humanSymbol ? '🎉 You Win! 🎉' : '💀 You Lose! 💀';
+        if (result === humanSymbol) {
+            title.textContent = '🎉 You Win! 🎉';
+        } else {
+            title.textContent = '💀 You Lose! 💀';
+        }
         message.textContent = msg;
     } else {
         title.textContent = 'Game Over';
@@ -403,8 +403,6 @@ function showResultModal(result, msg) {
     modal.style.display = 'block';
     modal.classList.add('fade-in');
     document.querySelector('.modal-content').classList.add('slide-down');
-
-    // Removed auto exit countdown logic
 }
 
 function showAILoading() {
@@ -414,11 +412,7 @@ function hideAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'none';
 }
 
-// NEW: Set humanSymbol by comparing current user to the two players
-const currentUser = "{{ current_user|escapejs }}";
-const humanSymbol = currentUser === "{{ game.player_x|escapejs }}" ? "X" :
-                    currentUser === "{{ game.player_o|escapejs }}" ? "O" : null;
-
 </script>
 
 {% endblock %}
+

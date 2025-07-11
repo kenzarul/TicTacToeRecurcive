@@ -34,15 +34,10 @@
     <div class="history-section">
         <h3>📜 Game History</h3>
         <!-- Sorting filter links -->
-        <div class="filter-options" style="text-align:center; margin-bottom:10px;">
-            Sort by Date:
-            {% if sort_order == 'asc' %}
-                <strong>Ascending</strong> |
-                <a href="?sort=desc">Descending</a>
-            {% else %}
-                <a href="?sort=asc">Ascending</a> |
-                <strong>Descending</strong>
-            {% endif %}
+        <div class="filter-options">
+            <span class="filter-label">Sort by Date:</span>
+            <a href="?sort=asc" class="filter-btn {% if sort_order == 'asc' %}active{% endif %}">Ascending</a>
+            <a href="?sort=desc" class="filter-btn {% if sort_order != 'asc' %}active{% endif %}">Descending</a>
         </div>
         <div class="history-container" style="max-height:400px; overflow-y:auto;">
             <table class="history-table">
@@ -181,6 +176,32 @@
 .history-container {
     max-height: 400px;
     overflow-y: auto;
+}
+
+.filter-options {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.filter-label {
+  color: #fff;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.filter-btn {
+  text-decoration: none;
+  padding: 6px 12px;
+  margin: 0 5px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+.filter-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+.filter-btn.active {
+  background-color: #ec4899;
 }
 </style>
 {% endblock %}

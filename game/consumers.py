@@ -1,5 +1,6 @@
 import json
 import asyncio
+import aiohttp
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
@@ -124,6 +125,10 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_surrender(self, data):
         surrendering_player = data.get('player')
         winner = 'O' if surrendering_player == 'X' else 'X'
+        # --- Set the winner in the database immediately ---
+        game = await self.get_game()
+        if game:
+            await self.set_game_winner(game, winner)
         await self.channel_layer.group_send(
             self.group_name,
             {
@@ -132,6 +137,17 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'message': f"{surrendering_player} surrendered. {winner} wins!",
             }
         )
+        # --- Register result in GameHistory ---
+        if game:
+            async with aiohttp.ClientSession() as session:
+                await session.post(
+                    'http://localhost:8000/game/register_multiplayer_result/',
+                    data={
+                        'room_code': game.room_code,
+                        'winner': winner,
+                        'loser': surrendering_player,
+                    }
+                )
         # Do NOT reset the game state here. Wait for replay votes.
 
     async def handle_vote(self, data):
@@ -308,23 +324,22 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def play_move(self, game, main_index, sub_index, symbol=None):
-        # --- CHANGED: return both winner and winning_line from SubGame.play ---
         sub_game = game.sub_games.filter(index=main_index).first()
         if not sub_game:
             raise ValueError("SubGame does not exist")
-        result = sub_game.play(sub_index, symbol)
-        # result is (winner, winning_line)
+        # Unpack winner and winning_line from sub_game.play
+        winner, winning_line = sub_game.play(sub_index, symbol)
         game.last_main_index = main_index
         game.last_sub_index = sub_index
         game.last_player = symbol
-        if result[0]:
-            game.board = game.board[:main_index] + result[0] + game.board[main_index + 1:]
+        if winner:
+            game.board = game.board[:main_index] + winner + game.board[main_index + 1:]
         elif ' ' not in sub_game.board:
             game.board = game.board[:main_index] + ' ' + game.board[main_index + 1:]
         game.set_active_index(sub_index)
         game.save()
         game.is_game_over  # Trigger win check
-        return result
+        return (winner, winning_line)
 
     @database_sync_to_async
     def get_game_data(self):

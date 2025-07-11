@@ -51,7 +51,7 @@
 </style>
 
 {% with next_player=game.next_player game_over=game.is_game_over %}
-  {% if game_over == 'X' or game_over == 'O' or game_over == ' ' %}
+  {% if game_over == 'X' or game_over == 'O' or game_over == 'draw' %}
     <script>
       document.addEventListener('DOMContentLoaded', function() {
         showResultModal("{{ game_over }}");
@@ -386,41 +386,55 @@ function showResultModal(result, msg) {
     const confettiContainer = document.querySelector('.confetti-container');
     const confettiSound = document.getElementById('confettiSound');
 
-    // Clear previous confetti
+    // Clear previous confetti/rain
     confettiContainer.innerHTML = '';
 
-    // Determine if the player lost (algorithm won)
-    const playerLost = (result === 'X' && "{{ game.player_x }}" !== "human") ||
-                  (result === 'O' && "{{ game.player_o }}" !== "human");
+    // Get current user and player assignments from Django template context
+    const currentUser = "{{ current_user|escapejs }}";
+    const playerX = "{{ game.player_x|escapejs }}";
+    const playerO = "{{ game.player_o|escapejs }}";
 
-    if (result === 'X') {
-        if (playerLost) {
-            title.textContent = '💀 You Lose! 💀';
-            message.textContent = msg || 'Player X (Algorithm) Wins!';
-        } else {
-            title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = msg || 'Player X Wins the Game!';
-        }
-    } else if (result === 'O') {
-        if (playerLost) {
-            title.textContent = '💀 You Lose! 💀';
-            message.textContent = msg || 'Player O (Algorithm) Wins!';
-        } else {
-            title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = msg || 'Player O Wins the Game!';
-        }
-    } else {
-        title.textContent = '🎉 Game Over! 🎉';
-        message.textContent = msg || 'The game ended in a stalemate!';
+    // Determine outcome for current user
+    let playerWon = false, playerLost = false, isDraw = false;
+
+    if (result === "draw") {
+        isDraw = true;
+    } else if (result === "X") {
+        if (currentUser === playerX) playerWon = true;
+        if (currentUser === playerO) playerLost = true;
+    } else if (result === "O") {
+        if (currentUser === playerO) playerWon = true;
+        if (currentUser === playerX) playerLost = true;
     }
 
+    // Set title and message
+    if (playerWon) {
+        title.textContent = '🎉 Bravo! 🎉';
+        message.textContent = msg || `Player ${result} Wins the Game!`;
+    } else if (playerLost) {
+        title.textContent = '💀 You Lose! 💀';
+        // Say algorithm if the opponent is not a user, otherwise just the winner
+        let oppType = (result === "X" ? playerX : playerO);
+        let winnerMsg = (oppType === "random" || oppType === "minimax" || oppType === "computer")
+            ? `Player ${result} (Algorithm) Wins!`
+            : `Player ${result} Wins the Game!`;
+        message.textContent = msg || winnerMsg;
+    } else if (isDraw) {
+        title.textContent = '🎉 Game Over! 🎉';
+        message.textContent = msg || 'The game ended in a stalemate!';
+    } else {
+        title.textContent = 'Game Over';
+        message.textContent = msg || '';
+    }
+
+    // Show the modal
     modal.style.display = 'block';
     modal.classList.add('fade-in');
     document.querySelector('.modal-content').classList.add('slide-down');
 
-    // Create particles based on win/lose
+    // Add confetti or rain for win/loss
     if (playerLost) {
-        // Create rain effect for losing
+        // Rain for losing
         for (let i = 0; i < 100; i++) {
             const drop = document.createElement('div');
             drop.classList.add('rain-drop');
@@ -433,8 +447,8 @@ function showResultModal(result, msg) {
             drop.style.height = size * 5 + 'px';
             confettiContainer.appendChild(drop);
         }
-    } else {
-        // Create confetti for winning
+    } else if (playerWon) {
+        // Confetti for winning
         for (let i = 0; i < 150; i++) {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
@@ -454,6 +468,7 @@ function showResultModal(result, msg) {
     confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
 
+
 // Show/hide AI loading overlay
 function showAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'flex';
@@ -462,16 +477,6 @@ function hideAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'none';
 }
 
-// Example usage:
-// When it's the computer's turn, call showAILoading() before starting minimax,
-// and call hideAILoading() after the move is made and the board is updated.
-//
-// If your AI move is triggered via AJAX or a setTimeout, wrap the AI logic like:
-//
-// showAILoading();
-// setTimeout(function() {
-//   ...AI move logic...
-//   hideAILoading();
-// }, 100); // Simulate delay if needed
 </script>
+
 {% endblock %}

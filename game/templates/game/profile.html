@@ -44,16 +44,22 @@
             </thead>
             <tbody>
                 {% for game in history %}
-                <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
-                    <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
-                    <td>{{ game.get_mode_display }}</td>
-                    <td>{{ game.opponent|default:"Computer" }}</td>
-                    <td>
-                        <span class="result-badge {{ game.result }}">
-                            {{ game.get_result_display }}
-                        </span>
-                    </td>
-                </tr>
+                    <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
+                        <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
+                        <td>{{ game.get_mode_display }}</td>
+                        <td>
+                            {% if game.opponent|lower == 'random' or game.opponent|lower == 'minimax' or game.opponent|lower == 'computer' %}
+                                Computer
+                            {% else %}
+                                {{ game.opponent }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="result-badge {{ game.result }}">
+                                {{ game.get_result_display }}
+                            </span>
+                        </td>
+                    </tr>
                 {% empty %}
                 <tr>
                     <td colspan="4">No games played yet.</td>

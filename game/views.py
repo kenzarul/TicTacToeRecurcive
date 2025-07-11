@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Game, GameHistory
 from django.db.models import Q
+from django.utils import timezone
 
 from django.http import JsonResponse
 
@@ -17,28 +18,35 @@ from .models import Game
 
 @login_required
 def profile(request):
-    # Get the base queryset without slicing
     history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
 
-    # Calculate stats from the full queryset first
+    # --- Deduplicate history by (opponent, mode, result, date_played rounded to minute) ---
+    seen = set()
+    deduped_history = []
+    for game in history_queryset:
+        key = (
+            (game.opponent or '').lower(),
+            game.mode,
+            game.result,
+            game.date_played.strftime('%Y%m%d%H%M')  # round to minute
+        )
+        if key not in seen:
+            seen.add(key)
+            deduped_history.append(game)
+        if len(deduped_history) >= 10:
+            break
+
+    # --- Calculate stats from deduplicated history ---
     stats = {
-        'total': history_queryset.count(),
-        'wins': history_queryset.filter(result='win').count(),
-        'losses': history_queryset.filter(result='loss').count(),
-        'draws': history_queryset.filter(result='draw').count(),
+        'total': len(deduped_history),
+        'wins': sum(1 for g in deduped_history if g.result == 'win'),
+        'losses': sum(1 for g in deduped_history if g.result == 'loss'),
+        'draws': sum(1 for g in deduped_history if g.result == 'draw'),
     }
-
-    # Calculate win percentage
-    if stats['total'] > 0:
-        stats['win_rate'] = round((stats['wins'] / stats['total']) * 100, 1)
-    else:
-        stats['win_rate'] = 0
-
-    # Now apply the slice for the template
-    history = history_queryset[:10]  # Only slice after all filtering is done
+    stats['win_rate'] = round((stats['wins'] / stats['total']) * 100, 1) if stats['total'] > 0 else 0
 
     return render(request, 'game/profile.html', {
-        'history': history,
+        'history': deduped_history,
         'total_games': stats['total'],
         'wins': stats['wins'],
         'losses': stats['losses'],
@@ -142,7 +150,7 @@ def join_multiplayer(request):
 
 def multiplayer_game_view(request, game_id):
     game = get_object_or_404(Game, id=game_id)
-    return render(request, 'game/test.html', {
+    return render(request, 'game/multi_player_board.html', {
         'game': game,
         'room_code': game.room_code,
         'my_player': request.user.username if request.user.is_authenticated else "Guest"
@@ -153,14 +161,48 @@ def multiplayer_game_view(request, game_id):
 @require_http_methods(["GET", "POST"])
 def game(request, pk):
     game = get_object_or_404(Game, pk=pk)
+
     if request.method == "POST":
         form = PlayForm(request.POST)
         if form.is_valid():
-            # Only process move if game isn't already over
+            main_index = form.cleaned_data['main_index']
+            sub_index = form.cleaned_data['sub_index']
+
             if not game.winner:
-                game.play(form.cleaned_data['main_index'], form.cleaned_data['sub_index'])
-                game.play_auto()
-                game.save()
+                player_symbol = 'X' if game.player_x == request.user.username else 'O'
+
+                try:
+                    game.play(main_index, sub_index, player_symbol)
+                    game.play_auto()
+                except Exception as e:
+                    print("Error during move:", e)
+
+            # --- FIX: Only log for human user, not for computer, and only once per game ---
+            if game.winner and request.user.is_authenticated:
+                user_symbol = 'X' if game.player_x == request.user.username else 'O'
+                opponent = game.player_o if user_symbol == 'X' else game.player_x
+                # Only log if the current user is not a computer/AI
+                if request.user.username.lower() not in ['random', 'minimax', 'computer']:
+                    # Only log if not already logged for this user and this game
+                    mode = 'single' if opponent and opponent.lower() in ['random', 'minimax', 'computer'] else 'multi'
+                    already_logged = GameHistory.objects.filter(
+                        user=request.user,
+                        opponent="Computer" if mode == 'single' else opponent,
+                        mode=mode,
+                        date_played__gte=game.date_created
+                    ).exists()
+                    if not already_logged:
+                        result = (
+                            'draw' if game.winner == ' ' or game.winner == 'draw' else
+                            'win' if game.winner == user_symbol else 'loss'
+                        )
+                        GameHistory.objects.create(
+                            user=request.user,
+                            opponent="Computer" if mode == 'single' else opponent,
+                            mode=mode,
+                            result=result
+                        )
+
             return redirect('game:detail', pk=pk)
 
     context = {
@@ -179,7 +221,7 @@ def game(request, pk):
         'sub_game_8': game.sub_games.filter(index=8).first(),
         'next_player': game.next_player
     }
-    return render(request, "game/game_detail_3.html", context)
+    return render(request, "game/single_player_board.html", context)
 
 # ======================= Sign Up View =======================
 
@@ -207,4 +249,43 @@ def restart_game(request):
         pass  # Handle the case where the game does not exist
     return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page
 
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 
+@csrf_exempt
+def register_multiplayer_result(request):
+    """
+    API endpoint to register a multiplayer result (e.g., on surrender).
+    Expects POST with room_code, winner, loser.
+    """
+    if request.method == "POST":
+        room_code = request.POST.get("room_code")
+        winner = request.POST.get("winner")
+        loser = request.POST.get("loser")
+        try:
+            game = Game.objects.get(room_code=room_code)
+            # Only log if not already logged for this game and user
+            for username, result in [(winner, 'win'), (loser, 'loss')]:
+                user = None
+                try:
+                    user = User.objects.get(username=username)
+                except User.DoesNotExist:
+                    continue
+                opponent = loser if username == winner else winner
+                already_logged = GameHistory.objects.filter(
+                    user=user,
+                    opponent=opponent,
+                    mode='multi',
+                    date_played__gte=game.date_created
+                ).exists()
+                if not already_logged:
+                    GameHistory.objects.create(
+                        user=user,
+                        opponent=opponent,
+                        mode='multi',
+                        result=result
+                    )
+            return HttpResponse("OK")
+        except Exception as e:
+            return HttpResponse(f"Error: {e}", status=400)
+    return HttpResponse("Invalid method", status=405)

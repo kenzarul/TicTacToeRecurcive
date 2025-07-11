@@ -18,6 +18,7 @@ class Game(models.Model):
     active_index = models.PositiveIntegerField(null=True, blank=True)
     winner = models.CharField(max_length=64, null=True, blank=True)
     last_player = models.CharField(max_length=1, null=True, blank=True)
+    total_time_limit = models.IntegerField(default=600)
 
     # Timer fields
     time_x = models.IntegerField(default=300)
@@ -48,14 +49,27 @@ class Game(models.Model):
         for wins in self.WINNING:
             w = (board[wins[0]], board[wins[1]], board[wins[2]])
             if w == ('X', 'X', 'X'):
-                self.winner = 'X'
-                self.save()
+                if self.winner != 'X':
+                    self.winner = 'X'
+                    self.save()
                 return 'X'
             if w == ('O', 'O', 'O'):
-                self.winner = 'O'
-                self.save()
+                if self.winner != 'O':
+                    self.winner = 'O'
+                    self.save()
                 return 'O'
-        return None if ' ' in board else ' '
+        # --- CHANGED: Detect draw if all subgames are full or won ---
+        all_full_or_won = all(
+            self.board[i] != ' ' or
+            (sg := self.sub_games.filter(index=i).first()) and (' ' not in sg.board)
+            for i in range(9)
+        )
+        if all_full_or_won:
+            if not self.winner:
+                self.winner = 'draw'
+                self.save()
+            return 'draw'
+        return None
 
     def play(self, main_index, sub_index, symbol=None):
         if self.winner:
@@ -83,9 +97,9 @@ class Game(models.Model):
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
-        # Fix: Check for None before comparing to int
         if main_index is None or sub_index is None or main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
+        # --- CHANGED: Prevent move if main board square is not playable ---
         if self.board[main_index] != ' ':
             return None
 
@@ -93,11 +107,15 @@ class Game(models.Model):
         if not sub_game:
             raise ValueError("SubGame does not exist")
 
-        # Prevent move if subgame is won or full (draw)
+        # --- CHANGED: Prevent move if subgame is won or full (draw) ---
         if sub_game.is_game_over or ' ' not in sub_game.board:
+            # Mark the main board as full if subgame is full but not won
+            if self.board[main_index] == ' ':
+                self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
+                self.save()
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 
         self.last_main_index = main_index
@@ -107,6 +125,7 @@ class Game(models.Model):
         if winner:
             self.board = self.board[:main_index] + winner + self.board[main_index + 1:]
         elif ' ' not in sub_game.board:
+            # --- CHANGED: Mark main board as full if subgame is full but not won ---
             self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
 
         self.set_active_index(sub_index)
@@ -115,11 +134,10 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
+        # --- CHANGED: If the intended next board is already won or full, allow any board ---
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
-            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None
@@ -240,7 +258,8 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        winner = sub_game.play(sub_index, symbol)
+        # --- CHANGED: Only use winner from tuple returned by sub_game.play ---
+        winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 
         self.last_main_index = main_index
@@ -353,6 +372,7 @@ class SubGame(models.Model):
                 self.winner = 'O'
                 self.save()
                 return 'O'
+        # --- CHANGED: Return ' ' if board is full and no winner (draw for subgame) ---
         return None if ' ' in board else ' '
 
     def play(self, index, symbol):
@@ -367,8 +387,9 @@ class SubGame(models.Model):
         self.last_move_index = index
         self.save()
 
-        # Return just the winner symbol (or None)
-        return self.is_game_over
+        winner = self.is_game_over
+        winning_line = self.get_winning_line() if winner in ('X', 'O') else None
+        return (winner, winning_line)
 
     def play_auto(self):
         if not self.is_game_over:

@@ -3,7 +3,10 @@
 {% block body %}
 <!-- Surrender button on main page -->
 <div style="text-align:center; margin: 20px;">
-  <button id="surrender-btn" class="modal-btn" style="font-size:18px;">🚩 Surrender</button>
+  <form method="post" style="display:inline;">
+    {% csrf_token %}
+    <button id="surrender-btn" class="modal-btn" style="font-size:18px;" name="surrender" value="1">🚩 Surrender</button>
+  </form>
 </div>
 
 <!-- Timer display: Only for human player -->
@@ -31,6 +34,7 @@
     <div class="modal-footer">
       <button id="replay-btn" class="modal-btn">🔄 Replay</button>
       <a href="{% url 'game:main_menu' %}" class="modal-btn exit">Exit</a>
+      <p id="countdown-timer" style="margin-top: 10px; font-size: 14px;">Auto exit in 60s</p>
     </div>
   </div>
 </div>
@@ -54,7 +58,24 @@
   {% if game_over == 'X' or game_over == 'O' or game_over == 'draw' %}
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        showResultModal("{{ game_over }}");
+        // Get current user and player assignments from Django template context
+        var currentUser = "{{ current_user|escapejs }}";
+        var playerX = "{{ game.player_x|escapejs }}";
+        var playerO = "{{ game.player_o|escapejs }}";
+        var winner = "{{ game_over }}";
+        var isDraw = (winner === "draw" || winner === " " || winner === "");
+        var playerWon = (winner === "X" && currentUser === playerX) || (winner === "O" && currentUser === playerO);
+        var playerLost = (winner === "X" && currentUser === playerO) || (winner === "O" && currentUser === playerX);
+
+        if (isDraw) {
+          showResultModal(winner, "The game ended in a stalemate!");
+        } else if (playerWon) {
+          showResultModal(winner, "You Win!");
+        } else if (playerLost) {
+          showResultModal(winner, "You surrendered. Defeat!");
+        } else {
+          showResultModal(winner);
+        }
       });
     </script>
   {% else %}
@@ -355,20 +376,7 @@ function setCurrentTurn(turn) {
 
 document.addEventListener('DOMContentLoaded', function() {
     startSinglePlayerTimer();
-    const surrenderBtn = document.getElementById('surrender-btn');
     const replayBtn = document.getElementById('replay-btn');
-    if (surrenderBtn) {
-        surrenderBtn.onclick = function() {
-            // Show lose modal immediately
-            {% if game.player_x == 'human' %}
-                showResultModal("O");
-            {% else %}
-                showResultModal("X");
-            {% endif %}
-            gameOver = true;
-            clearInterval(timerInterval);
-        };
-    }
     if (replayBtn) {
         replayBtn.onclick = function() {
             // Redirect to main menu (safe fallback)
@@ -385,6 +393,7 @@ function showResultModal(result, msg) {
     const message = document.getElementById('resultMessage');
     const confettiContainer = document.querySelector('.confetti-container');
     const confettiSound = document.getElementById('confettiSound');
+    const countdownTimer = document.getElementById('countdown-timer');
 
     // Clear previous confetti/rain
     confettiContainer.innerHTML = '';
@@ -413,12 +422,11 @@ function showResultModal(result, msg) {
         message.textContent = msg || `Player ${result} Wins the Game!`;
     } else if (playerLost) {
         title.textContent = '💀 You Lose! 💀';
-        // Say algorithm if the opponent is not a user, otherwise just the winner
         let oppType = (result === "X" ? playerX : playerO);
-        let winnerMsg = (oppType === "random" || oppType === "minimax" || oppType === "computer")
+        let winnerMsg = (msg ? msg : ((oppType === "random" || oppType === "minimax" || oppType === "computer")
             ? `Player ${result} (Algorithm) Wins!`
-            : `Player ${result} Wins the Game!`;
-        message.textContent = msg || winnerMsg;
+            : `Player ${result} Wins the Game!`));
+        message.textContent = winnerMsg;
     } else if (isDraw) {
         title.textContent = '🎉 Game Over! 🎉';
         message.textContent = msg || 'The game ended in a stalemate!';
@@ -434,7 +442,6 @@ function showResultModal(result, msg) {
 
     // Add confetti or rain for win/loss
     if (playerLost) {
-        // Rain for losing
         for (let i = 0; i < 100; i++) {
             const drop = document.createElement('div');
             drop.classList.add('rain-drop');
@@ -448,7 +455,6 @@ function showResultModal(result, msg) {
             confettiContainer.appendChild(drop);
         }
     } else if (playerWon) {
-        // Confetti for winning
         for (let i = 0; i < 150; i++) {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
@@ -466,10 +472,21 @@ function showResultModal(result, msg) {
     confettiSound.volume = 0.3;
     confettiSound.currentTime = 0;
     confettiSound.play().catch(e => console.log("Audio play failed:", e));
+
+    // --- Countdown logic for auto-exit ---
+    let countdown = 60;
+    countdownTimer.textContent = `Auto exit in ${countdown}s`;
+    let countdownInterval = setInterval(() => {
+        countdown--;
+        countdownTimer.textContent = `Auto exit in ${countdown}s`;
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            window.location.href = "{% url 'game:main_menu' %}";
+        }
+    }, 1000);
+    // Also allow manual exit via the Exit button (already present)
 }
 
-
-// Show/hide AI loading overlay
 function showAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'flex';
 }

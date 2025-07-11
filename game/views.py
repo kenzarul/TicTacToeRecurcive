@@ -33,8 +33,6 @@ def profile(request):
         if key not in seen:
             seen.add(key)
             deduped_history.append(game)
-        if len(deduped_history) >= 10:
-            break
 
     # --- Calculate stats from deduplicated history ---
     stats = {
@@ -162,7 +160,35 @@ def multiplayer_game_view(request, game_id):
 def game(request, pk):
     game = get_object_or_404(Game, pk=pk)
 
-    if request.method == "POST":
+    # --- Handle surrender for single player ---
+    if request.method == "POST" and request.POST.get("surrender") == "1":
+        if not game.winner:
+            user_symbol = 'X' if game.player_x == request.user.username else 'O'
+            ai_symbol = 'O' if user_symbol == 'X' else 'X'
+            game.winner = ai_symbol
+            game.save()
+            # Log defeat in GameHistory if not already logged
+            if request.user.is_authenticated and request.user.username.lower() not in ['random', 'minimax', 'computer']:
+                opponent = game.player_o if user_symbol == 'X' else game.player_x
+                mode = 'single' if opponent and opponent.lower() in ['random', 'minimax', 'computer'] else 'multi'
+                already_logged = GameHistory.objects.filter(
+                    user=request.user,
+                    opponent="Computer" if mode == 'single' else opponent,
+                    mode=mode,
+                    date_played__gte=game.date_created
+                ).exists()
+                if not already_logged:
+                    GameHistory.objects.create(
+                        user=request.user,
+                        opponent="Computer" if mode == 'single' else opponent,
+                        mode=mode,
+                        result='loss'
+                    )
+        # --- Redirect to detail page to show result modal ---
+        return redirect('game:detail', pk=pk)
+
+    # Only process move form if not a surrender POST
+    if request.method == "POST" and not request.POST.get("surrender"):
         form = PlayForm(request.POST)
         if form.is_valid():
             main_index = form.cleaned_data['main_index']
@@ -219,7 +245,8 @@ def game(request, pk):
         'sub_game_6': game.sub_games.filter(index=6).first(),
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
-        'next_player': game.next_player
+        'next_player': game.next_player,
+        'current_user': request.user.username if request.user.is_authenticated else '',
     }
     return render(request, "game/single_player_board.html", context)
 

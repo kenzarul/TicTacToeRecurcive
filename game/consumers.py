@@ -125,7 +125,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_surrender(self, data):
         surrendering_player = data.get('player')
         winner = 'O' if surrendering_player == 'X' else 'X'
-        # --- Set the winner in the database immediately ---
+        # --- Set the winner in the database immediately and save ---
         game = await self.get_game()
         if game:
             await self.set_game_winner(game, winner)
@@ -376,4 +376,9 @@ class GameConsumer(AsyncWebsocketConsumer):
     def reset_full_game(self):
         game = Game.objects.get(room_code=self.room_code)
         game.reset_state()
+        game.save()
+
+    @database_sync_to_async
+    def set_game_winner(self, game, winner):
+        game.winner = winner
         game.save()

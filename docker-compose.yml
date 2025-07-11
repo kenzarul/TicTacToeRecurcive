@@ -1,18 +1,29 @@
-﻿
+﻿#############################################
+# docker-compose.yml  (placer à la racine)  #
+#############################################
 
 services:
+
+  # ──────────────────────────
+  #  Django + Daphne (ASGI)
+  # ──────────────────────────
   web:
     build: .
     container_name: django
     restart: unless-stopped
+    # Variables sensibles dans .env (non versionné)
     env_file: .env
     depends_on:
-      - db
+      db:                         # attend MySQL sain
+        condition: service_healthy
     volumes:
-      - static:/staticfiles
-      - media:/mediafiles
+      - static:/staticfiles       # collectstatic
+      - media:/mediafiles         # uploads utilisateur
     networks: [backend]
 
+  # ──────────────────────────
+  #  Reverse-proxy Nginx
+  # ──────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: nginx
@@ -26,22 +37,37 @@ services:
       - "8080:8080"
     networks: [backend]
 
+  # ──────────────────────────
+  #  Base de données MySQL 8
+  # ──────────────────────────
   db:
-    image: postgres:16
-    container_name: postgres
+    image: mysql:8.3
+    container_name: mysql
     restart: unless-stopped
     environment:
-      POSTGRES_DB: tictac
-      POSTGRES_USER: tictac
-      POSTGRES_PASSWORD: tictac
+      #  ➜ définis-les dans .env
+      MYSQL_ROOT_PASSWORD: Root23175@
+      MYSQL_DATABASE:      tictactoe_db
+      MYSQL_USER:          root
+      MYSQL_PASSWORD:     Root23175@
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pRoot23175@"]
+      interval: 5s
+      retries: 5
     networks: [backend]
 
+# ──────────────────────────
+#  Volumes persistants
+# ──────────────────────────
 volumes:
   static:
   media:
-  pgdata:
+  dbdata:
 
+# ──────────────────────────
+#  Réseau privé
+# ──────────────────────────
 networks:
   backend:

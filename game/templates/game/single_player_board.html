@@ -324,9 +324,12 @@
 {% endwith %}
 
 <script>
-let timer = 300;
+let timer = 300; // 5 minutes for the whole game
 let timerInterval = null;
 let currentTurn = "{{ game.next_player }}";
+
+// Use humanSymbol based on template context (human vs AI)
+// ...existing code to set humanSymbol...
 {% if game.player_x == 'human' %}
   const humanSymbol = "X";
 {% elif game.player_o == 'human' %}
@@ -350,37 +353,30 @@ function startSinglePlayerTimer() {
   if (!humanSymbol) return;
   if (timerInterval) clearInterval(timerInterval);
   updateTimerDisplay();
+  // Run a single countdown for the whole game (not per move)
   timerInterval = setInterval(() => {
     if (gameOver) {
       clearInterval(timerInterval);
       return;
     }
-    if (currentTurn === humanSymbol) {
-      timer--;
-      updateTimerDisplay();
-      if (timer <= 0) {
-        clearInterval(timerInterval);
-        showResultModal(humanSymbol === "X" ? "O" : "X", humanSymbol + " ran out of time!");
-        gameOver = true;
-        return;
-      }
+    timer--;
+    updateTimerDisplay();
+    if (timer <= 0) {
+      clearInterval(timerInterval);
+      showResultModal(humanSymbol === "X" ? "O" : "X", humanSymbol + " ran out of time!");
+      gameOver = true;
+      return;
     }
   }, 1000);
-}
-
-// Call this when the turn changes in your game logic:
-function setCurrentTurn(turn) {
-  currentTurn = turn;
-  updateTimerDisplay();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     startSinglePlayerTimer();
     const replayBtn = document.getElementById('replay-btn');
     if (replayBtn) {
+        // Redirect to the single player landing page so user can start a new game
         replayBtn.onclick = function() {
-            // Redirect to main menu (safe fallback)
-            window.location.href = "{% url 'game:main_menu' %}";
+            window.location.href = "{% url 'game:single_player' %}";
         };
     }
 });
@@ -391,10 +387,11 @@ function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
-    const confettiContainer = document.querySelector('.confetti-container');
-    const confettiSound = document.getElementById('confettiSound');
-    const countdownTimer = document.getElementById('countdown-timer');
-
+    // Use the normalized opponent name for result messaging if needed:
+    // For example, if the opponent wins in single player, show "Player X (Computer) Wins"
+    let opponentDisplay = playerO;
+    // ...existing result modal code...
+}
     // Clear previous confetti/rain
     confettiContainer.innerHTML = '';
 

@@ -49,7 +49,9 @@
                             <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
                             <td>{{ game.get_mode_display }}</td>
                             <td>
-                                {% if game.opponent|lower == "random" or game.opponent|lower == "minimax" or game.opponent|lower == "computer" or game.opponent|slice:":7"|lower == "inmemory" or game.opponent|lower == "guest" %}
+                                {% if game.opponent|lower == "random" or game.opponent|lower == "minimax" or game.opponent|lower == "computer" %}
+                                    Computer
+                                {% elif game.opponent|slice:":7"|lower == "inmemory" or game.opponent|lower == "guest" %}
                                     Guest
                                 {% else %}
                                     {{ game.opponent }}

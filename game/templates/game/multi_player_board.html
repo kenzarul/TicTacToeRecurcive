@@ -232,7 +232,6 @@ socket.onmessage = e => {
       if (opponent.toLowerCase() === "guest" ||
           opponent.toLowerCase() === "random" ||
           opponent.toLowerCase() === "minimax" ||
-          opponent.toLowerCase() === "computer" ||
           opponent.toLowerCase().startsWith("inmemory")) {
           opponent = "Guest";
       }

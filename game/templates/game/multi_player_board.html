@@ -227,9 +227,18 @@ socket.onmessage = e => {
       stopWaitingTimer();
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
-      document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
-      timer.X = data.time_x;  // Use backend-provided time for X
-      timer.O = data.time_o;  // Use backend-provided time for O
+      let opponent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
+      // Normalize opponent name: any value that comes from a guest connection is shown as "Guest"
+      if (opponent.toLowerCase() === "guest" ||
+          opponent.toLowerCase() === "random" ||
+          opponent.toLowerCase() === "minimax" ||
+          opponent.toLowerCase() === "computer" ||
+          opponent.toLowerCase().startsWith("inmemory")) {
+          opponent = "Guest";
+      }
+      document.getElementById("opponent-name").textContent = opponent;
+      timer.X = data.time_x;
+      timer.O = data.time_o;
       document.getElementById("timer-x").textContent = formatTime(timer.X);
       document.getElementById("timer-o").textContent = formatTime(timer.O);
       if (interval) clearInterval(interval);

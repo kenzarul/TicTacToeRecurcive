@@ -180,29 +180,36 @@ class GameConsumer(AsyncWebsocketConsumer):
         """
         game = await self.get_game()
         if game:
-            await self.reset_full_game()
+            await self.reset_full_game()  # Reset game state in the database (calls game.reset_state())
+            # Reset internal vote tracking
+            self.vote_yes = {'X': False, 'O': False}
+            self.vote_no = {'X': False, 'O': False}
+            # Fetch fresh game data after reset
             game_data = await self.get_game_data()
-            await self.channel_layer.group_send(self.group_name, {
-                'type': 'restart_game',
-                'next_player': game_data['next_player'],
-                'player_x': game_data['player_x'],
-                'player_o': game_data['player_o'],
-                'time_x': game_data['remaining_x'],
-                'time_o': game_data['remaining_o'],
-            })
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'restart_game',
+                    'next_player': game_data['next_player'],
+                    'player_x': game_data['player_x'],
+                    'player_o': game_data['player_o'],
+                    'time_x': game_data['remaining_x'],
+                    'time_o': game_data['remaining_o'],
+                }
+            )
             await self.start_timer_loop()
 
     async def restart_game(self, event):
         """
-        Notify the frontend to restart the game.
+        Notify the frontend with complete game reset data.
         """
         await self.send(text_data=json.dumps({
             'type': 'restart',
-            'next_player': event['next_player'],
-            'player_x': event['player_x'],
-            'player_o': event['player_o'],
-            'time_x': event['time_x'],
-            'time_o': event['time_o'],
+            'next_player': event.get('next_player'),
+            'player_x': event.get('player_x'),
+            'player_o': event.get('player_o'),
+            'time_x': event.get('time_x'),
+            'time_o': event.get('time_o'),
         }))
 
     async def start_timer_loop(self):
@@ -273,16 +280,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             'vote': event['vote'],
         }))
 
-    async def restart_game(self, event):
-        await self.send(text_data=json.dumps({
-            'type': 'restart'
-        }))
-
     async def update_timers(self, event):
+        # Handler for "update_timers" messages
         await self.send(text_data=json.dumps({
             'type': 'timer_update',
-            'time_x': event['time_x'],
-            'time_o': event['time_o'],
+            'time_x': event.get('time_x'),
+            'time_o': event.get('time_o'),
         }))
 
     # ---------------------------- Database Helpers ----------------------------
@@ -304,12 +307,14 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def assign_player(self, game):
+        # Use "Guest" if user is not authenticated
+        player_identifier = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest"
         if not game.player_x:
-            game.player_x = self.channel_name
+            game.player_x = player_identifier
             game.save()
             return 'X'
         elif not game.player_o:
-            game.player_o = self.channel_name
+            game.player_o = player_identifier
             game.save()
             return 'O'
         return None

@@ -33,40 +33,42 @@
 
     <div class="history-section">
         <h3>📜 Game History</h3>
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Mode</th>
-                    <th>Opponent</th>
-                    <th>Result</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for game in history %}
-                    <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
-                        <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
-                        <td>{{ game.get_mode_display }}</td>
-                        <td>
-                            {% if game.opponent|lower == 'random' or game.opponent|lower == 'minimax' or game.opponent|lower == 'computer' %}
-                                Computer
-                            {% else %}
-                                {{ game.opponent }}
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="result-badge {{ game.result }}">
-                                {{ game.get_result_display }}
-                            </span>
-                        </td>
+        <div class="history-container" style="max-height:400px; overflow-y:auto;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Mode</th>
+                        <th>Opponent</th>
+                        <th>Result</th>
                     </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4">No games played yet.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for game in history %}
+                        <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
+                            <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
+                            <td>{{ game.get_mode_display }}</td>
+                            <td>
+                                {% if game.opponent|lower == "random" or game.opponent|lower == "minimax" or game.opponent|lower == "computer" or game.opponent|slice:":7"|lower == "inmemory" or game.opponent|lower == "guest" %}
+                                    Guest
+                                {% else %}
+                                    {{ game.opponent }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="result-badge {{ game.result }}">
+                                    {{ game.get_result_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No games played yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="profile-actions">
@@ -161,6 +163,11 @@
 
 .logout-button {
     background: #F44336;
+}
+
+.history-container {
+    max-height: 400px;
+    overflow-y: auto;
 }
 </style>
 {% endblock %}

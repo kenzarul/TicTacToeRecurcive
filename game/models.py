@@ -45,6 +45,9 @@ class Game(models.Model):
 
     @property
     def is_game_over(self):
+        # NEW: Immediately return the winner if already set (e.g. via surrender)
+        if self.winner:
+            return self.winner
         board = list(self.board)
         for wins in self.WINNING:
             w = (board[wins[0]], board[wins[1]], board[wins[2]])
@@ -74,12 +77,13 @@ class Game(models.Model):
     def play(self, main_index, sub_index, symbol=None):
         if self.winner:
             raise ValidationError("Game is already over")
-
         if symbol is None:
             symbol = self.next_player
 
         now = timezone.now()
-        if self.last_move_time:
+        # Only update remaining time in multiplayer mode.
+        # In single player (AI opponent), use fixed total time (global countdown).
+        if self.last_move_time and not (self.player_o and self.player_o.lower() in ['random', 'minimax', 'computer']):
             elapsed = int((now - self.last_move_time).total_seconds())
             if self.last_player == 'X':
                 self.remaining_x = max(0, self.remaining_x - elapsed)
@@ -93,26 +97,20 @@ class Game(models.Model):
                     self.winner = 'X'
                     self.save()
                     return self.winner
+        # For single player mode, do not subtract elapsed time.
         self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
         if main_index is None or sub_index is None or main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
-        # --- CHANGED: Prevent move if main board square is not playable ---
         if self.board[main_index] != ' ':
             return None
 
         sub_game = self.sub_games.filter(index=main_index).first()
         if not sub_game:
             raise ValueError("SubGame does not exist")
-
-        # --- CHANGED: Prevent move if subgame is won or full (draw) ---
         if sub_game.is_game_over or ' ' not in sub_game.board:
-            # Mark the main board as full if subgame is full but not won
-            if self.board[main_index] == ' ':
-                self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
-                self.save()
             raise ValidationError("This sub-board is full or already won")
 
         winner, _ = sub_game.play(sub_index, symbol)
@@ -125,7 +123,6 @@ class Game(models.Model):
         if winner:
             self.board = self.board[:main_index] + winner + self.board[main_index + 1:]
         elif ' ' not in sub_game.board:
-            # --- CHANGED: Mark main board as full if subgame is full but not won ---
             self.board = self.board[:main_index] + ' ' + self.board[main_index + 1:]
 
         self.set_active_index(sub_index)
@@ -221,12 +218,13 @@ class Game(models.Model):
     def play(self, main_index, sub_index, symbol=None):
         if self.winner:
             raise ValidationError("Game is already over")
-
         if symbol is None:
             symbol = self.next_player
 
         now = timezone.now()
-        if self.last_move_time:
+        # Only update remaining time in multiplayer mode.
+        # In single player (AI opponent), use fixed total time (global countdown).
+        if self.last_move_time and not (self.player_o and self.player_o.lower() in ['random', 'minimax', 'computer']):
             elapsed = int((now - self.last_move_time).total_seconds())
             if self.last_player == 'X':
                 self.remaining_x = max(0, self.remaining_x - elapsed)
@@ -240,11 +238,11 @@ class Game(models.Model):
                     self.winner = 'X'
                     self.save()
                     return self.winner
+        # For single player mode, do not subtract elapsed time.
         self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
             raise ValidationError("This is not the active board")
-        # Fix: Check for None before comparing to int
         if main_index is None or sub_index is None or main_index < 0 or main_index >= 9 or sub_index < 0 or sub_index >= 9:
             raise IndexError("Invalid board index")
         if self.board[main_index] != ' ':
@@ -253,8 +251,6 @@ class Game(models.Model):
         sub_game = self.sub_games.filter(index=main_index).first()
         if not sub_game:
             raise ValueError("SubGame does not exist")
-
-        # Prevent move if subgame is won or full (draw)
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 

@@ -18,7 +18,11 @@ from .models import Game
 
 @login_required
 def profile(request):
-    history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
+    sort_order = request.GET.get('sort', 'desc')
+    if sort_order == 'asc':
+        history_queryset = GameHistory.objects.filter(user=request.user).order_by('date_played')
+    else:
+        history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
 
     # --- Deduplicate history by (opponent, mode, result, date_played rounded to minute) ---
     seen = set()
@@ -49,7 +53,8 @@ def profile(request):
         'wins': stats['wins'],
         'losses': stats['losses'],
         'draws': stats['draws'],
-        'win_rate': stats['win_rate']
+        'win_rate': stats['win_rate'],
+        'sort_order': sort_order,
     })
 def main_menu(request):
     return render(request, 'game/main_menu.html')

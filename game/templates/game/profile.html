@@ -33,6 +33,17 @@
 
     <div class="history-section">
         <h3>📜 Game History</h3>
+        <!-- Sorting filter links -->
+        <div class="filter-options" style="text-align:center; margin-bottom:10px;">
+            Sort by Date:
+            {% if sort_order == 'asc' %}
+                <strong>Ascending</strong> |
+                <a href="?sort=desc">Descending</a>
+            {% else %}
+                <a href="?sort=asc">Ascending</a> |
+                <strong>Descending</strong>
+            {% endif %}
+        </div>
         <div class="history-container" style="max-height:400px; overflow-y:auto;">
             <table class="history-table">
                 <thead>

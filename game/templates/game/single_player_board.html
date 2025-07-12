@@ -3,15 +3,18 @@
 {% block body %}
 <!-- Surrender button on main page -->
 <div style="text-align:center; margin: 20px;">
-  <button id="surrender-btn" class="modal-btn" style="font-size:18px;">🚩 Surrender</button>
+  <form method="post" style="display:inline;">
+    {% csrf_token %}
+    <button id="surrender-btn" class="modal-btn" style="font-size:18px;" name="surrender" value="1">🚩 Surrender</button>
+  </form>
 </div>
 
-<!-- Timer display: Only for human player -->
+<!-- Timer display: for current user -->
 <div id="timer-panel" style="text-align:center; margin-bottom: 20px;">
-  {% if game.player_x == 'human' %}
+  {% if current_user == game.player_x %}
     <span style="font-size:18px;">⏱ X: <span id="timer-x">5:00</span></span>
-  {% elif game.player_o == 'human' %}
-    <span style="font-size:18px;">⏱ O: <span id="timer-x">5:00</span></span>
+  {% elif current_user == game.player_o %}
+    <span style="font-size:18px;">⏱ O: <span id="timer-o">5:00</span></span>
   {% endif %}
 </div>
 
@@ -29,7 +32,6 @@
       <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
     </audio>
     <div class="modal-footer">
-      <button id="replay-btn" class="modal-btn">🔄 Replay</button>
       <a href="{% url 'game:main_menu' %}" class="modal-btn exit">Exit</a>
     </div>
   </div>
@@ -48,13 +50,53 @@
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
 }
+
+/* Confetti animation styles */
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #FFC107;
+  border-radius: 50%;
+  animation: confetti-fall 3s ease-in-out infinite;
+  z-index: 10;
+  opacity: 0.8;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px) rotate(360deg);
+    opacity: 0;
+  }
+}
 </style>
 
 {% with next_player=game.next_player game_over=game.is_game_over %}
-  {% if game_over == 'X' or game_over == 'O' or game_over == ' ' %}
+  {% if game_over == 'X' or game_over == 'O' or game_over == 'draw' %}
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        showResultModal("{{ game_over }}");
+        // Get current user and player assignments from Django template context
+        var currentUser = "{{ current_user|escapejs }}";
+        var playerX = "{{ game.player_x|escapejs }}";
+        var playerO = "{{ game.player_o|escapejs }}";
+        var winner = "{{ game_over }}";
+        var isDraw = (winner === "draw" || winner === " " || winner === "");
+        var playerWon = (winner === "X" && currentUser === playerX) || (winner === "O" && currentUser === playerO);
+        var playerLost = (winner === "X" && currentUser === playerO) || (winner === "O" && currentUser === playerX);
+
+        if (isDraw) {
+          showResultModal(winner, "The game ended in a stalemate!");
+        } else if (playerWon) {
+          showResultModal(winner, "You Win!");
+        } else if (playerLost) {
+          showResultModal(winner, "You surrendered. Defeat!");
+        } else {
+          showResultModal(winner);
+        }
       });
     </script>
   {% else %}
@@ -303,17 +345,19 @@
 {% endwith %}
 
 <script>
+// Global countdown for entire game (5 minutes = 300 seconds)
 let timer = 300;
 let timerInterval = null;
 let currentTurn = "{{ game.next_player }}";
-{% if game.player_x == 'human' %}
+{% if current_user == game.player_x %}
   const humanSymbol = "X";
-{% elif game.player_o == 'human' %}
+{% elif current_user == game.player_o %}
   const humanSymbol = "O";
 {% else %}
   const humanSymbol = null;
 {% endif %}
-let gameOver = {% if game.is_game_over %}true{% else %}false{% endif %};
+// Use proper timer element based on humanSymbol
+const timerElId = humanSymbol === "X" ? "timer-x" : "timer-o";
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -322,139 +366,95 @@ function formatTime(seconds) {
 }
 
 function updateTimerDisplay() {
-  document.getElementById("timer-x").textContent = formatTime(timer);
+  document.getElementById(timerElId).textContent = formatTime(timer);
 }
 
 function startSinglePlayerTimer() {
-  if (!humanSymbol) return;
-  if (timerInterval) clearInterval(timerInterval);
+  // Start the countdown only once for the whole game
+  if (timerInterval) return;  // Prevent reinitializing the timer
   updateTimerDisplay();
   timerInterval = setInterval(() => {
-    if (gameOver) {
+    timer--;
+    updateTimerDisplay();
+    if (timer <= 0) {
       clearInterval(timerInterval);
+      showResultModal(humanSymbol === "X" ? "O" : "X", "Time's up! You ran out of time!");
+      gameOver = true;
       return;
-    }
-    if (currentTurn === humanSymbol) {
-      timer--;
-      updateTimerDisplay();
-      if (timer <= 0) {
-        clearInterval(timerInterval);
-        showResultModal(humanSymbol === "X" ? "O" : "X", humanSymbol + " ran out of time!");
-        gameOver = true;
-        return;
-      }
     }
   }, 1000);
 }
 
-// Call this when the turn changes in your game logic:
-function setCurrentTurn(turn) {
-  currentTurn = turn;
-  updateTimerDisplay();
-}
-
 document.addEventListener('DOMContentLoaded', function() {
-    startSinglePlayerTimer();
-    const surrenderBtn = document.getElementById('surrender-btn');
-    const replayBtn = document.getElementById('replay-btn');
-    if (surrenderBtn) {
-        surrenderBtn.onclick = function() {
-            // Show lose modal immediately
-            {% if game.player_x == 'human' %}
-                showResultModal("O");
-            {% else %}
-                showResultModal("X");
-            {% endif %}
-            gameOver = true;
-            clearInterval(timerInterval);
-        };
-    }
-    if (replayBtn) {
-        replayBtn.onclick = function() {
-            // Redirect to main menu (safe fallback)
-            window.location.href = "{% url 'game:main_menu' %}";
-        };
-    }
+    startSinglePlayerTimer();  // Called once when page loads
 });
 
-// If you have JS code that updates the turn, call setCurrentTurn('X') or setCurrentTurn('O') accordingly.
-
+// In showResultModal, ensure lost result shows "💀 You Lose! 💀"
 function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
     const confettiContainer = document.querySelector('.confetti-container');
-    const confettiSound = document.getElementById('confettiSound');
 
-    // Clear previous confetti
+    // Clear any previous confetti
     confettiContainer.innerHTML = '';
 
-    // Determine if the player lost (algorithm won)
-    const playerLost = (result === 'X' && "{{ game.player_x }}" !== "human") ||
-                  (result === 'O' && "{{ game.player_o }}" !== "human");
-
-    if (result === 'X') {
-        if (playerLost) {
-            title.textContent = '💀 You Lose! 💀';
-            message.textContent = msg || 'Player X (Algorithm) Wins!';
-        } else {
-            title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = msg || 'Player X Wins the Game!';
-        }
-    } else if (result === 'O') {
-        if (playerLost) {
-            title.textContent = '💀 You Lose! 💀';
-            message.textContent = msg || 'Player O (Algorithm) Wins!';
-        } else {
-            title.textContent = '🎉 Bravo! 🎉';
-            message.textContent = msg || 'Player O Wins the Game!';
-        }
-    } else {
+    if (result === "draw") {
         title.textContent = '🎉 Game Over! 🎉';
         message.textContent = msg || 'The game ended in a stalemate!';
+    } else if (result === "X" || result === "O") {
+        if (result === humanSymbol) {
+            title.textContent = '🎉 You Win! 🎉';
+            // Create confetti for win!
+            createConfetti();
+            playConfettiSound();
+        } else {
+            title.textContent = '💀 You Lose! 💀';
+        }
+        message.textContent = msg;
+    } else {
+        title.textContent = 'Game Over';
+        message.textContent = msg || '';
     }
 
     modal.style.display = 'block';
     modal.classList.add('fade-in');
     document.querySelector('.modal-content').classList.add('slide-down');
-
-    // Create particles based on win/lose
-    if (playerLost) {
-        // Create rain effect for losing
-        for (let i = 0; i < 100; i++) {
-            const drop = document.createElement('div');
-            drop.classList.add('rain-drop');
-            drop.style.left = Math.random() * 100 + 'vw';
-            drop.style.top = -10 + 'px';
-            drop.style.animationDuration = 1 + Math.random() * 2 + 's';
-            drop.style.animationDelay = Math.random() * 2 + 's';
-            const size = 1 + Math.random() * 3;
-            drop.style.width = size + 'px';
-            drop.style.height = size * 5 + 'px';
-            confettiContainer.appendChild(drop);
-        }
-    } else {
-        // Create confetti for winning
-        for (let i = 0; i < 150; i++) {
-            const confetti = document.createElement('div');
-            confetti.classList.add('confetti');
-            confetti.style.left = Math.random() * 100 + 'vw';
-            confetti.style.top = -10 + 'px';
-            confetti.style.animationDuration = 3 + Math.random() * 4 + 's';
-            confetti.style.animationDelay = Math.random() * 2 + 's';
-            const size = 5 + Math.random() * 10;
-            confetti.style.width = size + 'px';
-            confetti.style.height = size + 'px';
-            confettiContainer.appendChild(confetti);
-        }
-    }
-
-    confettiSound.volume = 0.3;
-    confettiSound.currentTime = 0;
-    confettiSound.play().catch(e => console.log("Audio play failed:", e));
 }
 
-// Show/hide AI loading overlay
+// Add confetti creation function
+function createConfetti() {
+    const confettiContainer = document.querySelector('.confetti-container');
+    const colors = ['#FFC107', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0', '#3F51B5'];
+
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confetti.style.animationDelay = Math.random() * 1 + 's';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+
+        // Random shapes
+        if (Math.random() > 0.5) {
+            confetti.style.borderRadius = '0';
+            confetti.style.width = (Math.random() * 6 + 4) + 'px';
+            confetti.style.height = (Math.random() * 6 + 4) + 'px';
+            confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        }
+
+        confettiContainer.appendChild(confetti);
+    }
+}
+
+// Add sound function
+function playConfettiSound() {
+    const sound = document.getElementById('confettiSound');
+    sound.volume = 0.3;
+    sound.currentTime = 0;
+    sound.play().catch(err => console.log('Sound play failed:', err));
+}
+
 function showAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'flex';
 }
@@ -462,16 +462,6 @@ function hideAILoading() {
   document.getElementById('ai-loading-overlay').style.display = 'none';
 }
 
-// Example usage:
-// When it's the computer's turn, call showAILoading() before starting minimax,
-// and call hideAILoading() after the move is made and the board is updated.
-//
-// If your AI move is triggered via AJAX or a setTimeout, wrap the AI logic like:
-//
-// showAILoading();
-// setTimeout(function() {
-//   ...AI move logic...
-//   hideAILoading();
-// }, 100); // Simulate delay if needed
 </script>
+
 {% endblock %}

@@ -61,11 +61,39 @@
     animation: fall 3s linear infinite;
     z-index: 10;
   }
+
+  /* Enhanced confetti animation */
   @keyframes fall {
-    to {
-      transform: translateY(100vh);
+    0% {
+      transform: translateY(-50px) rotate(0deg);
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
       opacity: 0;
     }
+  }
+
+  /* Different confetti colors */
+  .confetti.color1 { background-color: #FFC107; }
+  .confetti.color2 { background-color: #FF5252; }
+  .confetti.color3 { background-color: #4CAF50; }
+  .confetti.color4 { background-color: #2196F3; }
+  .confetti.color5 { background-color: #9C27B0; }
+
+  /* Different confetti shapes */
+  .confetti.circle { border-radius: 50%; }
+  .confetti.square { border-radius: 0; }
+  .confetti.triangle {
+    width: 0 !important;
+    height: 0 !important;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 10px solid;
+    background-color: transparent !important;
   }
 
   /* Surrender button style (same as single player) */
@@ -150,7 +178,7 @@
 <div id="info-panel" style="display:none; text-align:center; margin-bottom:20px;">
   <h2>Ultimate Tic Tac Toe – Multiplayer</h2>
   <p><strong>You:</strong> <span id="assigned-player">?</span> &nbsp; | &nbsp;
-     <strong>Opponent:</strong> <span id="opponent-name">?</span></p>
+     <strong>Room Creator:</strong> <span id="room-creator-name">?</span></p>
   <p><strong>Turn:</strong> <span id="current-turn">-</span></p>
   <div style="position:absolute; top:20px; right:20px; font-size:18px;">
     <div>⏱ X: <span id="timer-x">0:00</span></div>
@@ -227,9 +255,20 @@ socket.onmessage = e => {
       stopWaitingTimer();
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
-      document.getElementById("opponent-name").textContent = (data.player_x === myPlayer ? data.player_o : data.player_x) || "Waiting...";
-      timer.X = data.time_x;  // Use backend-provided time for X
-      timer.O = data.time_o;  // Use backend-provided time for O
+
+      // Update: Use player_x directly with fallback "Guest" (remove "Waiting...")
+      let roomCreator = data.player_x || "Guest";
+      if (roomCreator.toLowerCase() === "guest" ||
+          roomCreator.toLowerCase() === "random" ||
+          roomCreator.toLowerCase() === "minimax" ||
+          roomCreator.toLowerCase().startsWith("inmemory")) {
+          roomCreator = "Guest";
+      }
+      document.getElementById("room-creator-name").textContent = roomCreator;
+
+      myPlayer = data.player_assignment || myPlayer;
+      timer.X = data.time_x;
+      timer.O = data.time_o;
       document.getElementById("timer-x").textContent = formatTime(timer.X);
       document.getElementById("timer-o").textContent = formatTime(timer.O);
       if (interval) clearInterval(interval);
@@ -282,7 +321,7 @@ socket.onmessage = e => {
       timer.O = data.time_o;
       document.getElementById("timer-x").textContent = formatTime(timer.X);
       document.getElementById("timer-o").textContent = formatTime(timer.O);
-      resetGameUI(data.board, data.active_index);
+      resetGameUI();
       updateSquareColors(data.next_player);
       document.getElementById("current-turn").textContent = data.next_player;
       if (interval) clearInterval(interval);
@@ -377,6 +416,72 @@ function updateTimers() {
   document.getElementById("timer-o").textContent = formatTime(timer.O);
 }
 
+function attachSquareHandlers() {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    sq.onclick = function() {
+      if (!myPlayer) return;
+      if (document.getElementById("gameResultModal").style.display === 'flex') return;
+      const main = parseInt(sq.dataset.main);
+      const sub = parseInt(sq.dataset.sub);
+
+      // Prevent move if already played
+      if (sq.textContent) return;
+
+      // Prevent move if not your turn
+      if (myPlayer !== document.getElementById("current-turn").textContent) {
+        alert("Wait your turn");
+        return;
+      }
+
+      // Prevent move if not active board
+      if (
+        currentActive !== null &&
+        currentActive !== main &&
+        subgameWinners[currentActive] === null
+      ) {
+        alert("You must play in the highlighted subgrid.");
+        return;
+      }
+
+      // Prevent move if subgrid is already won
+      if (subgameWinners[main] !== null) {
+        alert("This subgrid is already won.");
+        return;
+      }
+
+      // Only allow move if this is a playable square
+      if (
+        (currentActive === null && subgameWinners[main] === null && sq.textContent === '') ||
+        (currentActive === main && subgameWinners[main] === null && sq.textContent === '')
+      ) {
+        socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
+      }
+    };
+  });
+}
+
+// Call this after every reset or start
+function resetGameUI() {
+  document.querySelectorAll(".small-square").forEach(sq => {
+    sq.textContent = '';
+    sq.style.pointerEvents = 'auto';
+    sq.style.backgroundColor = '#f9f9f9';
+    sq.style.color = '';
+    sq.classList.remove('win-x', 'win-o');
+  });
+  subgameWinners = Array(9).fill(null);
+  currentActive = null;
+  document.getElementById("gameResultModal").style.display = 'none';
+  document.getElementById("vote-status").textContent = "";
+  votes = { X: false, O: false };
+  document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
+  document.querySelectorAll(".big-overlay").forEach(el => el.remove());
+  attachSquareHandlers();
+}
+
+// Also call once on page load
+attachSquareHandlers();
+
 function highlightActive(idx) {
   document.querySelectorAll(".big-board").forEach((board, i) => {
     const subSquares = board.querySelectorAll('.small-square');
@@ -399,8 +504,13 @@ function updateSquareColors(turn) {
   document.querySelectorAll(".small-square").forEach(sq => {
     sq.classList.remove('playable-x', 'playable-o');
     if (!sq.textContent) sq.style.backgroundColor = '#f9f9f9';
+    // Remove win highlight if not in winning line
+    sq.classList.remove('win-x', 'win-o');
   });
+  // Highlight playable squares for the current turn
   highlightActive(currentActive);
+
+  // Highlight boards won by X or O
   document.querySelectorAll(".big-board").forEach((board, i) => {
     board.classList.remove('won-x', 'won-o');
     if (subgameWinners[i] === 'X') {
@@ -408,74 +518,17 @@ function updateSquareColors(turn) {
     } else if (subgameWinners[i] === 'O') {
       board.classList.add('won-o');
     }
+    // Highlight winning squares in subgame
+    if (subgameWinningSquares[i]) {
+      subgameWinningSquares[i].forEach(idx => {
+        const winSq = board.querySelector(`[data-sub="${idx}"]`);
+        if (winSq) {
+          winSq.classList.add(subgameWinners[i] === 'X' ? 'win-x' : 'win-o');
+        }
+      });
+    }
   });
 }
-
-function resetGameUI(board = "         ", activeIndex = null) {
-  document.querySelectorAll(".small-square").forEach((sq, idx) => {
-    const mainIndex = Math.floor(idx / 9);
-    const subIndex = idx % 9;
-    sq.textContent = board[mainIndex] === ' ' ? '' : board[mainIndex];
-    sq.style.pointerEvents = 'auto';
-    sq.style.backgroundColor = '#f9f9f9';
-    sq.style.color = '';
-    sq.classList.remove('win-x', 'win-o');
-  });
-
-  subgameWinners = Array(9).fill(null);
-  currentActive = activeIndex;
-
-  document.getElementById("gameResultModal").style.display = 'none';
-  document.getElementById("vote-status").textContent = "";
-  votes = { X: false, O: false };
-  document.querySelectorAll(".big-board").forEach(b => b.style.boxShadow = 'none');
-  document.querySelectorAll(".big-overlay").forEach(el => el.remove());
-  attachSquareHandlers();
-}
-
-// Ensure square handlers are attached after every reset or start
-function attachSquareHandlers() {
-  document.querySelectorAll(".small-square").forEach(sq => {
-    sq.onclick = function() {
-      if (!myPlayer) return;
-      if (document.getElementById("gameResultModal").style.display === 'flex') return;
-      const main = parseInt(sq.dataset.main);
-      const sub = parseInt(sq.dataset.sub);
-
-      if (sq.textContent) return;
-
-      if (myPlayer !== document.getElementById("current-turn").textContent) {
-        alert("Wait your turn");
-        return;
-      }
-
-      if (
-        currentActive !== null &&
-        currentActive !== main &&
-        subgameWinners[currentActive] === null
-      ) {
-        alert("You must play in the highlighted subgrid.");
-        return;
-      }
-
-      if (subgameWinners[main] !== null) {
-        alert("This subgrid is already won.");
-        return;
-      }
-
-      if (
-        (currentActive === null && subgameWinners[main] === null && sq.textContent === '') ||
-        (currentActive === main && subgameWinners[main] === null && sq.textContent === '')
-      ) {
-        socket.send(JSON.stringify({ action: 'move', player: myPlayer, main_index: main, sub_index: sub }));
-      }
-    };
-  });
-}
-
-// Call this once on page load
-attachSquareHandlers();
-
 
 function showResult(winner, msg) {
   const modal = document.getElementById("gameResultModal");
@@ -521,20 +574,47 @@ function showResult(winner, msg) {
 function animateResult(isLoss) {
   const container = document.querySelector('.confetti-container');
   container.innerHTML = '';
+
   if (isLoss) {
+    // Create rain drops for loss scenario
     for (let i = 0; i < 100; i++) {
       const drop = document.createElement('div');
       drop.className = 'rain-drop';
       drop.style.left = Math.random() * 100 + 'vw';
+      drop.style.animationDelay = (Math.random() * 2) + 's';
       drop.style.height = (5 + Math.random() * 10) + 'px';
+      drop.style.width = '2px';
+      drop.style.backgroundColor = '#6495ED';
       container.appendChild(drop);
     }
   } else {
+    // Create enhanced confetti for win scenario
+    const colors = ['color1', 'color2', 'color3', 'color4', 'color5'];
+    const shapes = ['circle', 'square', 'triangle'];
+
     for (let i = 0; i < 150; i++) {
       const cf = document.createElement('div');
-      cf.className = 'confetti';
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
+
+      cf.className = `confetti ${color} ${shape}`;
       cf.style.left = Math.random() * 100 + 'vw';
       cf.style.width = (5 + Math.random() * 5) + 'px';
+      cf.style.height = (5 + Math.random() * 5) + 'px';
+      cf.style.animationDuration = (Math.random() * 2 + 2) + 's';
+      cf.style.animationDelay = (Math.random() * 2) + 's';
+
+      // For triangle shape, add border color
+      if (shape === 'triangle') {
+        switch(color) {
+          case 'color1': cf.style.borderBottomColor = '#FFC107'; break;
+          case 'color2': cf.style.borderBottomColor = '#FF5252'; break;
+          case 'color3': cf.style.borderBottomColor = '#4CAF50'; break;
+          case 'color4': cf.style.borderBottomColor = '#2196F3'; break;
+          case 'color5': cf.style.borderBottomColor = '#9C27B0'; break;
+        }
+      }
+
       container.appendChild(cf);
     }
   }

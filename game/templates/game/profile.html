@@ -1,36 +1,215 @@
 {% extends 'base.html' %}
 
 {% block body %}
-<div class="profile-container" style="max-width: 600px; margin: 50px auto; background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center;">
-    <a href="{% url 'game:profile' %}" class="button">👤 Mon Profil</a>
+<div class="profile-container">
+    <h2>👤 My Profile</h2>
+    <p><strong>Username:</strong> {{ user.username }}</p>
 
-    <p><strong>Nom d'utilisateur :</strong> {{ user.username }}</p>
+    <div class="stats-section">
+        <h3>📊 My Stats</h3>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">{{ total_games }}</span>
+                <span class="stat-label">Total Games</span>
+            </div>
+            <div class="stat-card win">
+                <span class="stat-number">{{ wins }}</span>
+                <span class="stat-label">Wins</span>
+            </div>
+            <div class="stat-card loss">
+                <span class="stat-number">{{ losses }}</span>
+                <span class="stat-label">Losses</span>
+            </div>
+            <div class="stat-card draw">
+                <span class="stat-number">{{ draws }}</span>
+                <span class="stat-label">Draws</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ win_rate }}%</span>
+                <span class="stat-label">Win Rate</span>
+            </div>
+        </div>
+    </div>
 
-    <h3 style="margin-top: 25px;">🎮 Historique de mes jeux :</h3>
-    <ul style="list-style-type: none; padding: 0;">
-        {% for game in games %}
-    <li>🕹️ Partie ID : {{ game.id }} | 📅 {{ game.date_created|date:"d M Y H:i" }} | 🏁 Résultat :
-        {% if game.result == "win" %} ✅ Victoire
-        {% elif game.result == "loss" %} ❌ Défaite
-        {% else %} ➖ Égalité
-        {% endif %}
-    </li>
-{% endfor %}
-    </ul>
+    <div class="history-section">
+        <h3>📜 Game History</h3>
+        <!-- Sorting filter links -->
+        <div class="filter-options">
+            <span class="filter-label">Sort by Date:</span>
+            <a href="?sort=asc" class="filter-btn {% if sort_order == 'asc' %}active{% endif %}">Ascending</a>
+            <a href="?sort=desc" class="filter-btn {% if sort_order != 'asc' %}active{% endif %}">Descending</a>
+        </div>
+        <div class="history-container" style="max-height:400px; overflow-y:auto;">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Mode</th>
+                        <th>Opponent</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for game in history %}
+                        <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
+                            <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
+                            <!-- Updated Mode column -->
+                            <td>
+                                {% if "game.players" in game.opponent|lower %}
+                                    Single Player
+                                {% else %}
+                                    {{ game.get_mode_display }}
+                                {% endif %}
+                            </td>
+                            <!-- Updated Opponent column -->
+                            <td>
+                                {% if "game.players" in game.opponent|lower %}
+                                    Computer
+                                {% elif game.opponent|lower|slice:":5" == "guest" %}
+                                    Guest
+                                {% else %}
+                                    {{ game.opponent }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="result-badge {{ game.result }}">
+                                    {{ game.get_result_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4">No games played yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-    <div style="margin-top: 30px; display: flex; justify-content: center; gap: 20px;">
-        <!-- Bouton Retour -->
-        <a href="{% url 'game:main_menu' %}" class="button" style="background-color: #007bff; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none;">
-            🔙 Retour
-        </a>
-
-        <!-- Déconnexion (POST) -->
+    <div class="profile-actions">
+        <a href="{% url 'game:main_menu' %}" class="button">🔙 Back to Menu</a>
         <form method="POST" action="{% url 'logout' %}">
             {% csrf_token %}
-            <button type="submit" class="button" style="background-color: red; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
-                🔐 Déconnexion
-            </button>
+            <button type="submit" class="button logout-button">🔐 Logout</button>
         </form>
     </div>
 </div>
+
+<style>
+.profile-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    color: white;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-card.win { background: rgba(76, 175, 80, 0.2); }
+.stat-card.loss { background: rgba(244, 67, 54, 0.2); }
+.stat-card.draw { background: rgba(255, 193, 7, 0.2); }
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.history-table th, .history-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-table th {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.win-row { background: rgba(76, 175, 80, 0.1); }
+.loss-row { background: rgba(244, 67, 54, 0.1); }
+.draw-row { background: rgba(255, 193, 7, 0.1); }
+
+.result-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.result-badge.win { background: #4CAF50; color: white; }
+.result-badge.loss { background: #F44336; color: white; }
+.result-badge.draw { background: #FFC107; color: black; }
+
+.profile-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.logout-button {
+    background: #F44336;
+}
+
+.history-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.filter-options {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.filter-label {
+  color: #fff;
+  font-weight: bold;
+  margin-right: 10px;
+}
+.filter-btn {
+  text-decoration: none;
+  padding: 6px 12px;
+  margin: 0 5px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+.filter-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+.filter-btn.active {
+  background-color: #ec4899;
+}
+</style>
 {% endblock %}

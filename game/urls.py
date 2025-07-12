@@ -1,7 +1,6 @@
 from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
-from django.http import HttpResponse
 
 app_name = "game"
 
@@ -16,8 +15,6 @@ urlpatterns = [
     path('single/', views.single_player, name='single_player'),
     path('index/', views.index, name='index'),
     path('profile/', views.profile, name='profile'),
-    path("profile/", views.user_profile, name="profile"),
-
     # Classic game view
     path('<int:pk>/', views.game, name='detail'),
 

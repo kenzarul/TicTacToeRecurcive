@@ -1,9 +1,10 @@
 import random
 from django.core.exceptions import ValidationError
 from django.urls import reverse
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.contrib.auth.models import User
+from channels.db import database_sync_to_async
 
 
 class Game(models.Model):
@@ -437,3 +438,25 @@ class GameHistory(models.Model):
     def __str__(self):
         gid = f" | Game {self.game_identifier}" if self.game_identifier else ""
         return f"{self.user.username}{gid} - {self.get_mode_display()} - {self.result}"
+
+    @database_sync_to_async
+    def record_game_result(self, game, winner):
+        from .models import GameHistory
+        precise_game_id = f"{game.pk}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
+        player_results = {
+            game.player_x: {"user_obj": game.player_x, "result": "win" if winner == "X" else "loss"},
+            game.player_o: {"user_obj": game.player_o, "result": "win" if winner == "O" else "loss"},
+        }
+
+        # --- CHANGED: Removed duplicate filtering for replays ---
+        with transaction.atomic():
+            for username, data in player_results.items():
+                opponent_username = game.player_o if username == game.player_x else game.player_x
+                GameHistory.objects.create(
+                    user=data["user_obj"],
+                    opponent=opponent_username or "Unknown",
+                    mode='multi',
+                    result=data["result"],
+                    game_identifier=precise_game_id
+                )
+                print(f"Created game history: {username} vs {opponent_username}, Result: {data['result']}, Game ID: {precise_game_id}")

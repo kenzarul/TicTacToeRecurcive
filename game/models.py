@@ -81,9 +81,9 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Only update remaining time in multiplayer mode.
-        # In single player (AI opponent), use fixed total time (global countdown).
-        if self.last_move_time and not (self.player_o and self.player_o.lower() in ['random', 'minimax', 'computer']):
+        # Update: Use extended AI keywords for timer updates in single player mode.
+        if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
+                                                              for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
             if self.last_player == 'X':
                 self.remaining_x = max(0, self.remaining_x - elapsed)
@@ -113,6 +113,7 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
+        # --- CHANGED: Only use winner from tuple returned by sub_game.play ---
         winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 
@@ -131,10 +132,11 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # --- CHANGED: If the intended next board is already won or full, allow any board ---
+        # If the intended next board is already won or full, allow any board
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
+            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None
@@ -142,20 +144,19 @@ class Game(models.Model):
                 self.active_index = index
 
     def create_subgames(self):
-        # Allow computer as a valid player
-        if not self.player_x or (not self.player_o and self.player_o != 'computer'):
+        if not self.player_x or not self.player_o:
             raise ValueError("Cannot create subgames without both player_x and player_o")
-
         self.sub_games.all().delete()
         for i in range(9):
             SubGame.objects.create(
                 game=self,
                 index=i,
                 player_x=self.player_x,
-                player_o=self.player_o if self.player_o != 'computer' else None
+                player_o=self.player_o
             )
         self.board = " " * 9
         self.last_player = None
+        # Initialize remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()
@@ -195,25 +196,25 @@ class Game(models.Model):
             next_symbol = self.next_player
             player = self.player_x if next_symbol == 'X' else self.player_o
 
-            # Skip if the player is a human (username)
-            if player and player not in ['random', 'minimax', 'computer']:
+            # Update: Allow AI move if player string contains known AI keywords.
+            if player and not any(keyword in player.lower()
+                                for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax']):
                 return
 
             from game.players import get_player
             try:
                 player_obj = get_player(player)
-                main_index = self.active_index if self.active_index is not None else random.choice(
-                    [i for i, v in enumerate(self.board) if v == ' '])
+                main_index = self.active_index if self.active_index is not None else \
+                             random.choice([i for i, v in enumerate(self.board) if v == ' '])
                 sub_game = self.sub_games.filter(index=main_index).first()
                 sub_index = player_obj.play(sub_game, next_symbol)
                 self.play(main_index, sub_index, next_symbol)
             except Exception as e:
                 print(f"Error in auto play: {e}")  # For debugging
-                # Fallback to random if something goes wrong
                 from game.players import RandomPlayer
                 player_obj = RandomPlayer()
-                main_index = self.active_index if self.active_index is not None else random.choice(
-                    [i for i, v in enumerate(self.board) if v == ' '])
+                main_index = self.active_index if self.active_index is not None else \
+                             random.choice([i for i, v in enumerate(self.board) if v == ' '])
                 sub_game = self.sub_games.filter(index=main_index).first()
                 sub_index = player_obj.play(sub_game, next_symbol)
                 self.play(main_index, sub_index, next_symbol)
@@ -225,9 +226,9 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Only update remaining time in multiplayer mode.
-        # In single player (AI opponent), use fixed total time (global countdown).
-        if self.last_move_time and not (self.player_o and self.player_o.lower() in ['random', 'minimax', 'computer']):
+        # Update also here for timer update in the duplicate play() method.
+        if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
+                                                              for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
             if self.last_player == 'X':
                 self.remaining_x = max(0, self.remaining_x - elapsed)
@@ -257,7 +258,6 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        # --- CHANGED: Only use winner from tuple returned by sub_game.play ---
         winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 

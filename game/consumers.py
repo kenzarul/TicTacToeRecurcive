@@ -65,11 +65,18 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def start_game(self, event):
         game_data = await self.get_game_data()
+        current_user = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest"
+        if current_user == game_data['player_x']:
+            my_player = game_data['player_x']
+            opponent = game_data['player_o'] or "Waiting..."
+        else:
+            my_player = game_data['player_o']
+            opponent = game_data['player_x'] or "Waiting..."
         await self.send(text_data=json.dumps({
             'type': 'start',
             'next_player': game_data['next_player'],
-            'player_x': game_data['player_x'],
-            'player_o': game_data['player_o'],
+            'my_player': my_player,
+            'opponent': opponent,
             'time_x': game_data['remaining_x'],  # Send correct remaining time for X
             'time_o': game_data['remaining_o'],  # Send correct remaining time for O
         }))

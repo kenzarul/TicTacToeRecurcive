@@ -53,17 +53,19 @@
                     {% for game in history %}
                         <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
                             <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
+                            <!-- Updated Mode column -->
                             <td>
-                                {% if game.opponent|lower == "random" or game.opponent|lower == "minimax" or game.opponent|lower == "computer" or "player" in game.opponent|lower or "game.players" in game.opponent|lower %}
+                                {% if "game.players" in game.opponent|lower %}
                                     Single Player
                                 {% else %}
                                     {{ game.get_mode_display }}
                                 {% endif %}
                             </td>
+                            <!-- Updated Opponent column -->
                             <td>
-                                {% if game.opponent|lower == "random" or game.opponent|lower == "minimax" or game.opponent|lower == "computer" or "player" in game.opponent|lower or "game.players" in game.opponent|lower %}
+                                {% if "game.players" in game.opponent|lower %}
                                     Computer
-                                {% elif game.opponent|slice:":7"|lower == "inmemory" or game.opponent|lower == "guest" %}
+                                {% elif game.opponent|lower|slice:":5" == "guest" %}
                                     Guest
                                 {% else %}
                                     {{ game.opponent }}

@@ -441,22 +441,80 @@ class GameHistory(models.Model):
 
     @database_sync_to_async
     def record_game_result(self, game, winner):
+        from django.contrib.auth.models import User
         from .models import GameHistory
-        precise_game_id = f"{game.pk}-{timezone.now().strftime('%Y%m%d%H%M%S')}"
-        player_results = {
-            game.player_x: {"user_obj": game.player_x, "result": "win" if winner == "X" else "loss"},
-            game.player_o: {"user_obj": game.player_o, "result": "win" if winner == "O" else "loss"},
-        }
+        import time
+        import random
+        from django.db import transaction
+        from django.utils import timezone
+        from datetime import timedelta
 
-        # --- CHANGED: Removed duplicate filtering for replays ---
+        # Try to get both user objects
+        player_x_obj = None
+        player_o_obj = None
+
+        if game.player_x:
+            try:
+                player_x_obj = User.objects.get(username=game.player_x)
+            except User.DoesNotExist:
+                pass
+
+        if game.player_o:
+            try:
+                player_o_obj = User.objects.get(username=game.player_o)
+            except User.DoesNotExist:
+                pass
+
+        if not player_x_obj and not player_o_obj:
+            return
+
+        now = timezone.now()
+        time_str = now.strftime("%Y%m%d%H%M%S%f")
+        precise_game_id = f"{game.room_code}_{time_str}"
+
+        player_results = {}
+        if player_x_obj:
+            player_results[player_x_obj.username] = {"symbol": "X", "user_obj": player_x_obj}
+        if player_o_obj:
+            player_results[player_o_obj.username] = {"symbol": "O", "user_obj": player_o_obj}
+
+        if winner == 'draw':
+            for username in player_results:
+                player_results[username]["result"] = 'draw'
+        else:
+            for username, data in player_results.items():
+                if data["symbol"] == winner:
+                    player_results[username]["result"] = 'win'
+                else:
+                    player_results[username]["result"] = 'loss'
+
+        recent_time = now - timedelta(minutes=1)
         with transaction.atomic():
             for username, data in player_results.items():
                 opponent_username = game.player_o if username == game.player_x else game.player_x
-                GameHistory.objects.create(
+                # NEW: Determine mode and opponent display based on opponent string
+                if opponent_username and "game.players." in opponent_username.lower():
+                    mode_to_set = 'single'
+                    opponent_display = "Computer"
+                else:
+                    mode_to_set = 'multi'
+                    opponent_display = opponent_username or "Unknown"
+                # Use opponent_display in duplicate filtering
+                existing_records = GameHistory.objects.filter(
                     user=data["user_obj"],
-                    opponent=opponent_username or "Unknown",
-                    mode='multi',
+                    opponent=opponent_display,  # Updated here
+                    mode=mode_to_set,
                     result=data["result"],
-                    game_identifier=precise_game_id
+                    date_played__gte=recent_time
                 )
-                print(f"Created game history: {username} vs {opponent_username}, Result: {data['result']}, Game ID: {precise_game_id}")
+                if not existing_records.exists():
+                    GameHistory.objects.create(
+                        user=data["user_obj"],
+                        opponent=opponent_display,
+                        mode=mode_to_set,
+                        result=data["result"],
+                        game_identifier=precise_game_id
+                    )
+                    print(f"Created game history: {username} vs {opponent_username}, Result: {data['result']}, Game ID: {precise_game_id}")
+                else:
+                    print(f"Skipped duplicate game history for: {username} vs {opponent_username}, Game ID: {precise_game_id}")

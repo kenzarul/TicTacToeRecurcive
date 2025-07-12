@@ -427,9 +427,6 @@ class GameConsumer(AsyncWebsocketConsumer):
     # Add new utility method for recording game results directly
     @database_sync_to_async
     def record_game_result(self, game, winner):
-        """
-        Record game result for both players in GameHistory with improved deduplication
-        """
         from django.contrib.auth.models import User
         from .models import GameHistory
         import time
@@ -454,62 +451,53 @@ class GameConsumer(AsyncWebsocketConsumer):
             except User.DoesNotExist:
                 pass
 
-        # Skip if neither player is a registered user
         if not player_x_obj and not player_o_obj:
             return
 
-        # Get exact timestamp for this game result - more precise than int(time.time())
         now = timezone.now()
         time_str = now.strftime("%Y%m%d%H%M%S%f")
-
-        # Create a precise game identifier that includes timestamp to microsecond precision
         precise_game_id = f"{game.room_code}_{time_str}"
 
-        # Map players to their symbols and results
         player_results = {}
-
-        # Record which player is X and which is O
         if player_x_obj:
             player_results[player_x_obj.username] = {"symbol": "X", "user_obj": player_x_obj}
         if player_o_obj:
             player_results[player_o_obj.username] = {"symbol": "O", "user_obj": player_o_obj}
 
-        # Determine result for each player based on winner
         if winner == 'draw':
             for username in player_results:
                 player_results[username]["result"] = 'draw'
         else:
-            # Winner gets 'win', other player gets 'loss'
             for username, data in player_results.items():
                 if data["symbol"] == winner:
                     player_results[username]["result"] = 'win'
                 else:
                     player_results[username]["result"] = 'loss'
 
-        # Use a transaction to ensure atomicity
+        recent_time = now - timedelta(minutes=1)
         with transaction.atomic():
-            # Look for any recent records (within last minute) with same result to avoid duplicates
-            recent_time = now - timedelta(minutes=1)
-
-            # Create history entries for each player
             for username, data in player_results.items():
                 opponent_username = game.player_o if username == game.player_x else game.player_x
-
-                # Check for recent entries with same characteristics
+                # Determine mode and opponent display based on opponent string
+                if opponent_username and "game.players." in opponent_username.lower():
+                    mode_to_set = 'single'
+                    opponent_display = "Computer"
+                else:
+                    mode_to_set = 'multi'
+                    opponent_display = opponent_username or "Unknown"
+                # Use opponent_display for duplicate checking
                 existing_records = GameHistory.objects.filter(
                     user=data["user_obj"],
-                    opponent=opponent_username,
-                    mode='multi',
+                    opponent=opponent_display,  # Updated here
+                    mode=mode_to_set,
                     result=data["result"],
                     date_played__gte=recent_time
                 )
-
-                # Only create if no matching recent record exists
                 if not existing_records.exists():
                     GameHistory.objects.create(
                         user=data["user_obj"],
-                        opponent=opponent_username or "Unknown",
-                        mode='multi',
+                        opponent=opponent_display,
+                        mode=mode_to_set,
                         result=data["result"],
                         game_identifier=precise_game_id
                     )

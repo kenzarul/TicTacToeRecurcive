@@ -256,9 +256,8 @@ socket.onmessage = e => {
       document.getElementById("info-panel").style.display = 'block';
       document.getElementById("game-board").style.display = 'grid';
 
-      // Always display player_x as the room creator
-      let roomCreator = data.player_x || "Waiting...";
-      // Normalize room creator name if it's a guest/bot
+      // Update: Use player_x directly with fallback "Guest" (remove "Waiting...")
+      let roomCreator = data.player_x || "Guest";
       if (roomCreator.toLowerCase() === "guest" ||
           roomCreator.toLowerCase() === "random" ||
           roomCreator.toLowerCase() === "minimax" ||

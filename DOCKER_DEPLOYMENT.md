@@ -1,6 +1,22 @@
 # TicTacToe Docker Deployment
 
-This document provides instructions for deploying the TicTacToe application using Docker.
+This document provThe application will be available at http://localhost:8080
+
+## Architecture
+
+The application consists of:
+
+- **Django Web Application**: Runs on port 8080 internally, served by Daphne ASGI server
+- **WhiteNoise Middleware**: Efficiently serves static and media files  
+- **MySQL Database**: Persistent data storage  
+- **Redis**: Cache and WebSocket support for Django Channels
+
+## Services
+
+- **Web Application**: `http://localhost:8080` (main access point)
+- **Web Application Alternative**: `http://localhost:8000` (alternative access)
+- **MySQL Database**: `localhost:3307` (external access)
+- **Redis**: `localhost:6380` (external access) for deploying the TicTacToe application using Docker.
 
 ## Requirements
 
@@ -21,6 +37,35 @@ docker compose up -d
 ```
 
 The application will be available at http://localhost:8081
+
+## Docker Compose Files
+
+The project includes three docker-compose configurations:
+
+### 1. **docker-compose.yml** (Default - Development/Testing)
+```bash
+docker compose up -d
+```
+- Exposes both port 8000 and 8081
+- Debug mode enabled
+- Good for development and testing
+
+### 2. **docker-compose.prod.yml** (Production)
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+- Production optimized settings
+- Debug mode disabled (`DEBUG=false`)
+- Same functionality with production security settings
+
+### 3. **docker-compose.validate.yml** (Validation/Testing)
+```bash
+docker compose -f docker-compose.validate.yml up -d
+```
+- Enhanced validation and testing
+- Uses validation entrypoint script
+- Extended health check periods
+- Best for deployment validation
 
 ## Architecture
 
@@ -58,14 +103,21 @@ For production, use the production compose file:
 docker compose -f docker-compose.prod.yml up -d
 ```
 
+For validation and testing:
+
+```bash
+docker compose -f docker-compose.validate.yml up -d
+```
+
 This configuration:
 - Sets `DEBUG=false`
 - Uses production-optimized settings
-- Includes all security headers via Nginx
+- Includes all security headers via WhiteNoise
+- Enhanced validation with deployment checks
 
 ## Features
 
-✅ **Port 8081**: Application accessible on port 8081 (also available on 8000)  
+✅ **Port 8080**: Application accessible on port 8080 (also available on 8000)  
 ✅ **Two-command deployment**: `git clone` + `docker compose up -d`  
 ✅ **No runserver**: Uses Daphne ASGI server for production  
 ✅ **MySQL Database**: Production-ready database (not SQLite)  

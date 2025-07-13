@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Modal elements
     const htpModal = document.getElementById('how-to-play-modal');
     const helpButton = document.getElementById('help-button');
-    const closeHtpModal = htpModal?.querySelector('.close-modal-htp');
+    const closeHtpModal = document.querySelector('#how-to-play-modal .close-htp');
     const profileButton = document.getElementById('profile-button');
     const profileModal = document.getElementById('profile-modal');
     const closeProfileModal = profileModal?.querySelector('.close-modal-htp');
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle close button inside the how-to-play modal content
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('close-modal-htp-button')) {
+        if (e.target.classList.contains('close-htp')) {
             closeHowToPlayModal();
         }
     });

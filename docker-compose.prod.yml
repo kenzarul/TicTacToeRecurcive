@@ -1,0 +1,96 @@
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: tictactoe_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: tictactoe_db
+      MYSQL_ROOT_PASSWORD: Root23175@
+      MYSQL_USER: django_user
+      MYSQL_PASSWORD: django_pass
+    ports:
+      - "3307:3306"  # Changed to avoid port conflict
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRoot23175@"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - app_network
+
+  # Redis for Django Channels
+  redis:
+    image: redis:7-alpine
+    container_name: tictactoe_redis
+    restart: always
+    ports:
+      - "6380:6379"  # Changed to avoid port conflict
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  # Django Web Application
+  web:
+    build: .
+    container_name: tictactoe_web
+    restart: always
+    environment:
+      # Database Configuration
+      DATABASE_HOST: db
+      DATABASE_NAME: tictactoe_db
+      DATABASE_USER: root
+      DATABASE_PASSWORD: Root23175@
+      DATABASE_PORT: 3306
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379/1
+      # Django Configuration
+      DEBUG: "false"  # Production mode
+      SECRET_KEY: laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d
+      DJANGO_SETTINGS_MODULE: tictactoe.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - app_network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: tictactoe_nginx
+    restart: always
+    ports:
+      - "8080:80"  # Final application port
+    volumes:
+      - ./compose/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      web:
+        condition: service_healthy
+    networks:
+      - app_network
+
+volumes:
+  mysql_data:
+  redis_data:
+  static_volume:
+  media_volume:
+
+networks:
+  app_network:
+    driver: bridge

@@ -31,4 +31,4 @@ echo "Collecting static files..."
 python manage.py collectstatic --noinput --clear
 
 echo "Starting Daphne ASGI server..."
-exec daphne -b 0.0.0.0 -p 8000 tictactoe.asgi:application
+exec daphne -b 0.0.0.0 -p 8080 tictactoe.asgi:application

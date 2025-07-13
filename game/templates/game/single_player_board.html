@@ -110,7 +110,7 @@
             <!-- Top row of big boards -->
             <div class="big-row">
                 <!-- Board 0 -->
-                <div class="board {% if game.active_index is None and game.board.0 == ' ' %}playable-board {% elif active_index == 0 %}active{% endif %} {% if sub_game_0.winner %}{% if sub_game_0.winner == 'X' and game.player_x == 'human' or sub_game_0.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+            <div class="board {% if game.active_index is None and game.board.0 == ' ' %}playable-board {% elif active_index == 0 %}active{% endif %}{% if sub_game_0.winner %}{% if sub_game_0.winner == 'X' and game.player_x == request.user.username or sub_game_0.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 0 == last_sub_index and 0 == last_main_index %}rainbow-color{% endif %} {%if active_index == 0 or active_index is None and game.board.0 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=0 index=0 play=sub_game_0.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=0 %}
@@ -134,7 +134,7 @@
                     </div>
                 </div>
 
-                <div class="board {% if game.active_index is None and game.board.1 == ' ' %}playable-board {% elif active_index == 1 %}active{% endif %} {% if sub_game_1.winner %}{% if sub_game_1.winner == 'X' and game.player_x == 'human' or sub_game_1.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.1 == ' ' %}playable-board {% elif active_index == 1 %}active{% endif %}{% if sub_game_1.winner %}{% if sub_game_1.winner == 'X' and game.player_x == request.user.username or sub_game_1.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 1 == last_sub_index and 1 == last_main_index %}rainbow-color{% endif %} {%if active_index == 1 or active_index is None and game.board.1 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=1 index=0 play=sub_game_1.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=1 %}
@@ -160,7 +160,7 @@
 
 
                 <!-- Board 2 -->
-                <div class="board {% if game.active_index is None and game.board.2 == ' ' %}playable-board {% elif active_index == 2 %}active{% endif %} {% if sub_game_2.winner %}{% if sub_game_2.winner == 'X' and game.player_x == 'human' or sub_game_2.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.2 == ' ' %}playable-board {% elif active_index == 2 %}active{% endif %}{% if sub_game_2.winner %}{% if sub_game_2.winner == 'X' and game.player_x == request.user.username or sub_game_2.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 2 == last_sub_index and 2 == last_main_index %}rainbow-color{% endif %} {%if active_index == 2 or active_index is None and game.board.2 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=2 index=0 play=sub_game_2.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=2 %}
@@ -188,7 +188,7 @@
             <!-- Middle row of big boards -->
             <div class="big-row">
                 <!-- Board 3 -->
-                <div class="board {% if game.active_index is None and game.board.3 == ' ' %}playable-board {% elif active_index == 3 %}active{% endif %} {% if sub_game_3.winner %}{% if sub_game_3.winner == 'X' and game.player_x == 'human' or sub_game_3.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.3 == ' ' %}playable-board {% elif active_index == 3 %}active{% endif %}{% if sub_game_3.winner %}{% if sub_game_3.winner == 'X' and game.player_x == request.user.username or sub_game_3.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 3 == last_sub_index and 3 == last_main_index %}rainbow-color{% endif %} {%if active_index == 3 or active_index is None and game.board.3 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=3 index=0 play=sub_game_3.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=3 %}
@@ -214,7 +214,7 @@
 
 
                 <!-- Board 4 -->
-                <div class="board {% if game.active_index is None and game.board.4 == ' ' %}playable-board {% elif active_index == 4 %}active{% endif %} {% if sub_game_4.winner %}{% if sub_game_4.winner == 'X' and game.player_x == 'human' or sub_game_4.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.4 == ' ' %}playable-board {% elif active_index == 4 %}active{% endif %}{% if sub_game_4.winner %}{% if sub_game_4.winner == 'X' and game.player_x == request.user.username or sub_game_4.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 4 == last_sub_index and 4 == last_main_index %}rainbow-color{% endif %} {%if active_index == 4 or active_index is None and game.board.4 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=4 index=0 play=sub_game_4.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=4 %}
@@ -239,7 +239,7 @@
                 </div>
 
                 <!-- Board 5 -->
-                <div class="board {% if game.active_index is None and game.board.5 == ' ' %}playable-board {% elif active_index == 5 %}active{% endif %} {% if sub_game_5.winner %}{% if sub_game_5.winner == 'X' and game.player_x == 'human' or sub_game_5.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.5 == ' ' %}playable-board {% elif active_index == 5 %}active{% endif %}{% if sub_game_5.winner %}{% if sub_game_5.winner == 'X' and game.player_x == request.user.username or sub_game_5.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 5 == last_sub_index and 5 == last_main_index %}rainbow-color{% endif %} {%if active_index == 5 or active_index is None and game.board.5 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=5 index=0 play=sub_game_5.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=5 %}
@@ -267,7 +267,7 @@
             <!-- Bottom row of big boards -->
             <div class="big-row">
                 <!-- Board 6 -->
-                <div class="board {% if game.active_index is None and game.board.6 == ' ' %}playable-board {% elif active_index == 6 %}active{% endif %} {% if sub_game_6.winner %}{% if sub_game_6.winner == 'X' and game.player_x == 'human' or sub_game_6.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.6 == ' ' %}playable-board {% elif active_index == 6 %}active{% endif %}{% if sub_game_6.winner %}{% if sub_game_6.winner == 'X' and game.player_x == request.user.username or sub_game_6.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 6 == last_sub_index and 6 == last_main_index %}rainbow-color{% endif %} {%if active_index == 6 or active_index is None and game.board.6 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=6 index=0 play=sub_game_6.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=6 %}
@@ -292,7 +292,7 @@
                 </div>
 
                 <!-- Board 7 -->
-                <div class="board {% if game.active_index is None and game.board.7 == ' ' %}playable-board {% elif active_index == 7 %}active{% endif %} {% if sub_game_7.winner %}{% if sub_game_7.winner == 'X' and game.player_x == 'human' or sub_game_7.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.7 == ' ' %}playable-board {% elif active_index == 7 %}active{% endif %}{% if sub_game_7.winner %}{% if sub_game_7.winner == 'X' and game.player_x == request.user.username or sub_game_7.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 7 == last_sub_index and 7 == last_main_index %}rainbow-color{% endif %} {%if active_index == 7 or active_index is None and game.board.7 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=7 index=0 play=sub_game_7.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=7 %}
@@ -317,7 +317,7 @@
                 </div>
 
                 <!-- Board 8 -->
-                <div class="board {% if game.active_index is None and game.board.8 == ' ' %}playable-board {% elif active_index == 8 %}active{% endif %} {% if sub_game_8.winner %}{% if sub_game_8.winner == 'X' and game.player_x == 'human' or sub_game_8.winner == 'O' and game.player_o == 'human' %}won-human{% else %}won-ai{% endif %}{% endif %}">
+                <div class="board {% if game.active_index is None and game.board.8 == ' ' %}playable-board {% elif active_index == 8 %}active{% endif %}{% if sub_game_8.winner %}{% if sub_game_8.winner == 'X' and game.player_x == request.user.username or sub_game_8.winner == 'O' and game.player_o == request.user.username %}won-human{% else %}won-ai{% endif %}{% endif %}">
                     <div class="row">
                         <div class="board-square {% if 8 == last_sub_index and 8 == last_main_index %}rainbow-color{% endif %} {%if active_index == 8 or active_index is None and game.board.8 == ' ' %}playable-board{% endif%}">
                         {% include "includes/square.html" with game=game board=8 index=0 play=sub_game_8.board.0 last_main_index=last_main_index last_sub_index=last_sub_index current_main_index=8 %}

@@ -114,11 +114,22 @@ body {
 
 /* Won boards */
 .won-human {
-    background-color: rgba(0, 0, 255, 0.1) !important; /* Blue for human wins */
+    background-color: rgba(0, 0, 255, 0.3) !important; /* More opaque blue */
+
 }
 
 .won-ai {
-    background-color: rgba(255, 0, 0, 0.1) !important; /* Red for AI wins */
+    background-color: rgba(255, 0, 0, 0.3) !important; /* More opaque red */
+
+}
+
+/* For the winning squares within won boards */
+.won-human .square {
+    background-color: rgba(0, 0, 255, 0.2) !important;
+}
+
+.won-ai .square {
+    background-color: rgba(255, 0, 0, 0.2) !important;
 }
 
 .square button[type=submit]:hover {

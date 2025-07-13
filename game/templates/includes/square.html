@@ -11,7 +11,8 @@
   </form>
 {% else %}
   <div class="square
-              {% if play == 'X' and game.player_x == 'human' or play == 'O' and game.player_o == 'human' %}player-human
+              {% if play == 'X' and game.player_x == request.user.username or play == 'O' and game.player_o == request.user.username %}player-human
+              {% elif play == 'X' and 'player' in game.player_x|lower or play == 'O' and 'player' in game.player_o|lower %}player-ai
               {% else %}player-ai{% endif %}
               {% if last_main_index == current_main_index and last_sub_index == index %}rainbow-color{% endif %}">
       {{ play }}

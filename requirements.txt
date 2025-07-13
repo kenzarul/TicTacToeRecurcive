@@ -27,3 +27,5 @@ tzdata==2025.2
 whitenoise==6.9.0
 zope.interface==7.2
 aiohttp
+channels-redis==4.1.0
+redis==4.6.0

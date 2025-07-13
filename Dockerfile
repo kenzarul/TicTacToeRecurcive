@@ -1,19 +1,37 @@
-﻿# syntax=docker/dockerfile:1.13
-FROM python:3.13-slim
+﻿FROM python:3.11-slim
 
-ENV PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
-    DJANGO_SETTINGS_MODULE='tictactoe.settings'
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV DJANGO_SETTINGS_MODULE=tictactoe.settings
 
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential \
+        default-libmysqlclient-dev \
+        pkg-config \
+        curl \
+        netcat-traditional \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set work directory
 WORKDIR /app
 
+# Install Python dependencies
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache \
-    pip install --upgrade pip && \
-    pip install --use-pep517 -r requirements.txt
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
+# Copy project
 COPY . .
 
+# Create entrypoint script
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+# Expose port
 EXPOSE 8000
-HEALTHCHECK CMD curl -f http://localhost:8000/healthz/ || exit 1
-ENTRYPOINT ["/app/compose/entrypoint.sh"]
+
+# Run entrypoint
+ENTRYPOINT ["/docker-entrypoint.sh"]

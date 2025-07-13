@@ -5,3 +5,8 @@ venv/
 .git/
 *.sqlite3
 staticfiles/
+*.log
+.DS_Store
+node_modules/
+*.md
+LICENSE

@@ -1,73 +1,75 @@
-﻿#############################################
-# docker-compose.yml  (placer à la racine)  #
-#############################################
+﻿services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: tictactoe_mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: tictactoe_db
+      MYSQL_ROOT_PASSWORD: Root23175@
+      MYSQL_USER: django_user
+      MYSQL_PASSWORD: django_pass
+    ports:
+      - "3307:3306"  # Changed to avoid port conflict
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pRoot23175@"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - app_network
 
-services:
+  # Redis for Django Channels
+  redis:
+    image: redis:7-alpine
+    container_name: tictactoe_redis
+    restart: always
+    ports:
+      - "6380:6379"  # Changed to avoid port conflict
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
 
-  # ──────────────────────────
-  #  Django + Daphne (ASGI)
-  # ──────────────────────────
+  # Django Web Application
   web:
     build: .
-    container_name: django
-    restart: unless-stopped
-    # Variables sensibles dans .env (non versionné)
-    env_file: .env
-    depends_on:
-      db:                         # attend MySQL sain
-        condition: service_healthy
-    volumes:
-      - static:/staticfiles       # collectstatic
-      - media:/mediafiles         # uploads utilisateur
-    networks: [backend]
-
-  # ──────────────────────────
-  #  Reverse-proxy Nginx
-  # ──────────────────────────
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: nginx
-    restart: unless-stopped
-    volumes:
-      - static:/staticfiles:ro
-      - media:/mediafiles:ro
-      - ./compose/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on: [web]
+    container_name: tictactoe_web
+    restart: always
     ports:
-      - "8080:8080"
-    networks: [backend]
-
-  # ──────────────────────────
-  #  Base de données MySQL 8
-  # ──────────────────────────
-  db:
-    image: mysql:8.3
-    container_name: mysql
-    restart: unless-stopped
+      - "8000:8000"
     environment:
-      #  ➜ définis-les dans .env
-      MYSQL_ROOT_PASSWORD: Root23175@
-      MYSQL_DATABASE:      tictactoe_db
-      MYSQL_USER:          root
-      MYSQL_PASSWORD:     Root23175@
+      # Database Configuration
+      DATABASE_HOST: db
+      DATABASE_NAME: tictactoe_db
+      DATABASE_USER: root
+      DATABASE_PASSWORD: Root23175@
+      DATABASE_PORT: 3306
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379/1
+      # Django Configuration
+      DEBUG: 1
+      SECRET_KEY: laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d
+      DJANGO_SETTINGS_MODULE: tictactoe.settings
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
-      - dbdata:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pRoot23175@"]
-      interval: 5s
-      retries: 5
-    networks: [backend]
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    networks:
+      - app_network
 
-# ──────────────────────────
-#  Volumes persistants
-# ──────────────────────────
 volumes:
-  static:
-  media:
-  dbdata:
+  mysql_data:
+  redis_data:
+  static_volume:
+  media_volume:
 
-# ──────────────────────────
-#  Réseau privé
-# ──────────────────────────
 networks:
-  backend:
+  app_network:
+    driver: bridge

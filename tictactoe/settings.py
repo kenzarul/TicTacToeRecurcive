@@ -11,12 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']  # In production, specify your actual domain names
 
 # Application definition
 INSTALLED_APPS = [
@@ -104,6 +104,10 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media files
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

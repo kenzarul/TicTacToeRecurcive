@@ -20,20 +20,21 @@ cd TicTacToeRecurcive-main
 docker compose up -d
 ```
 
-The application will be available at http://localhost:8080
+The application will be available at http://localhost:8081
 
 ## Architecture
 
 The application consists of:
 
 - **Django Web Application**: Runs on port 8080 internally, served by Daphne ASGI server
-- **Nginx Reverse Proxy**: Serves static/media files and proxies requests to Django
-- **MySQL Database**: Persistent data storage
+- **WhiteNoise Middleware**: Efficiently serves static and media files  
+- **MySQL Database**: Persistent data storage  
 - **Redis**: Cache and WebSocket support for Django Channels
 
 ## Services
 
-- **Web Application**: `http://localhost:8080`
+- **Web Application**: `http://localhost:8081` (main access point)
+- **Web Application Alternative**: `http://localhost:8000` (alternative access)
 - **MySQL Database**: `localhost:3307` (external access)
 - **Redis**: `localhost:6380` (external access)
 
@@ -64,14 +65,16 @@ This configuration:
 
 ## Features
 
-✅ **Port 8080**: Application accessible on port 8080  
+✅ **Port 8081**: Application accessible on port 8081 (also available on 8000)  
 ✅ **Two-command deployment**: `git clone` + `docker compose up -d`  
 ✅ **No runserver**: Uses Daphne ASGI server for production  
 ✅ **MySQL Database**: Production-ready database (not SQLite)  
-✅ **Nginx Reverse Proxy**: Serves static/media files  
+✅ **Static/Media Files**: Efficiently served by WhiteNoise middleware  
 ✅ **Automatic Migrations**: Applied automatically on startup  
 ✅ **Health Checks**: Available at `/health/` and `/healthz/`  
 ✅ **Media Persistence**: Files persist across container restarts  
+✅ **WebSocket Support**: Real-time features with Django Channels  
+✅ **No System Check Errors**: Django runs cleanly in production mode  
 
 ## Default Admin User
 

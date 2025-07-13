@@ -77,28 +77,59 @@
 
 {% with next_player=game.next_player game_over=game.is_game_over %}
   {% if game_over == 'X' or game_over == 'O' or game_over == 'draw' %}
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Get current user and player assignments from Django template context
-        var currentUser = "{{ current_user|escapejs }}";
-        var playerX = "{{ game.player_x|escapejs }}";
-        var playerO = "{{ game.player_o|escapejs }}";
-        var winner = "{{ game_over }}";
-        var isDraw = (winner === "draw" || winner === " " || winner === "");
-        var playerWon = (winner === "X" && currentUser === playerX) || (winner === "O" && currentUser === playerO);
-        var playerLost = (winner === "X" && currentUser === playerO) || (winner === "O" && currentUser === playerX);
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get current user and player assignments from Django template context
+    var currentUser = "{{ current_user|escapejs }}";
+    var playerX = "{{ game.player_x|escapejs }}";
+    var playerO = "{{ game.player_o|escapejs }}";
+    var winner = "{{ game_over }}";
+    var isDraw = (winner === "draw" || winner === " " || winner === "");
+    var playerWon = (winner === "X" && currentUser === playerX) || (winner === "O" && currentUser === playerO);
+    var playerLost = (winner === "X" && currentUser === playerO) || (winner === "O" && currentUser === playerX);
 
-        if (isDraw) {
-          showResultModal(winner, "The game ended in a stalemate!");
-        } else if (playerWon) {
-          showResultModal(winner, "You Win!");
-        } else if (playerLost) {
-          showResultModal(winner, "You surrendered. Defeat!");
-        } else {
-          showResultModal(winner);
-        }
-      });
-    </script>
+    // Fun messages collection
+    var winMessages = [
+      "Victory is yours! 🎉",
+      "You crushed it! 💪",
+      "Winner winner chicken dinner! 🍗",
+      "Flawless strategy! ♟️",
+      "You're a tic-tac-toe titan! 👑",
+      "The AI didn't stand a chance! 🤖💥"
+    ];
+
+    var loseMessages = [
+      "Better luck next time! 🍀",
+      "The machines won this round... 🤖",
+      "You'll get them next game! ⚔️",
+      "Defeat is just practice for success! 💪",
+      "The AI learned from your moves! 🧠",
+      "You put up a good fight! 🛡️"
+    ];
+
+    var drawMessages = [
+      "A battle of equals! ⚔️",
+      "Stalemate - you're evenly matched! ⚖️",
+      "Mind vs. machine - nobody wins! 🤝",
+      "A draw - the ultimate showdown! 🤜🤛",
+      "You both played perfectly! 🎯",
+      "The game couldn't pick a winner! 🤷"
+    ];
+
+    if (isDraw) {
+      var drawMessage = drawMessages[Math.floor(Math.random() * drawMessages.length)];
+      showResultModal(winner, drawMessage);
+    } else if (playerWon) {
+      var winMessage = winMessages[Math.floor(Math.random() * winMessages.length)];
+      showResultModal(winner, winMessage);
+    } else if (playerLost) {
+      var loseMessage = loseMessages[Math.floor(Math.random() * loseMessages.length)];
+      showResultModal(winner, loseMessage);
+    } else {
+      showResultModal(winner);
+    }
+  });
+</script>
   {% else %}
     <h2>{{ next_player }} to play</h2>
     {% if game.active_index != None %}

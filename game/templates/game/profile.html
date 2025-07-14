@@ -52,20 +52,26 @@
                     {% for game in history %}
                     <tr class="{% if game.result == 'win' %}win-row{% elif game.result == 'loss' %}loss-row{% else %}draw-row{% endif %}">
                         <td>{{ game.date_played|date:"Y-m-d H:i" }}</td>
-                        <td>{{ game.get_mode_display }}</td>
                         <td>
-                            {% if game.opponent|lower == 'ai' %}
-                                Computer
-                            {% elif game.opponent|lower|slice:":5" == "guest" %}
-                                Guest
-                            {% else %}
-                                {{ game.opponent }}
-                            {% endif %}
+                          {% if game.opponent|lower|slice:":13" == "game.players." %}
+                             Single Player
+                          {% else %}
+                             {{ game.get_mode_display }}
+                          {% endif %}
                         </td>
                         <td>
-                            <span class="result-badge {{ game.result }}">
-                                {{ game.get_result_display }}
-                            </span>
+                          {% if game.opponent|lower|slice:":13" == "game.players." or game.opponent|lower == 'ai' %}
+                             Computer
+                          {% elif game.opponent|lower|slice:":5" == "guest" %}
+                             Guest
+                          {% else %}
+                             {{ game.opponent }}
+                          {% endif %}
+                        </td>
+                        <td>
+                          <span class="result-badge {{ game.result }}">
+                              {{ game.get_result_display }}
+                          </span>
                         </td>
                     </tr>
                     {% empty %}

@@ -29,3 +29,4 @@ zope.interface==7.2
 aiohttp
 channels-redis==4.1.0
 redis==4.6.0
+setuptools

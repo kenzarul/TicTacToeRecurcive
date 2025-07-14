@@ -118,3 +118,8 @@ CHANNEL_LAYERS = {
         "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
+
+try:
+    from .local_settings import *
+except ImportError:
+    pass

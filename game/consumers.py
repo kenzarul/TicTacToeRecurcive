@@ -4,6 +4,12 @@ import aiohttp
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Game
+from django.contrib.auth.models import User
+from .models import GameHistory
+
+from django.db import transaction
+from django.utils import timezone
+from datetime import timedelta
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -427,13 +433,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     # Add new utility method for recording game results directly
     @database_sync_to_async
     def record_game_result(self, game, winner):
-        from django.contrib.auth.models import User
-        from .models import GameHistory
-        import time
-        import random
-        from django.db import transaction
-        from django.utils import timezone
-        from datetime import timedelta
+
 
         # Try to get both user objects
         player_x_obj = None

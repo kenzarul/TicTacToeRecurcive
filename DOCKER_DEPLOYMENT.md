@@ -27,7 +27,7 @@ The application consists of:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/kenzarul/TicTacToeRecurcive.git
 cd TicTacToeRecurcive-main
 ```
 
@@ -36,7 +36,7 @@ cd TicTacToeRecurcive-main
 docker compose up -d
 ```
 
-The application will be available at http://localhost:8081
+The application will be available at http://localhost:8080
 
 ## Docker Compose Files
 
@@ -78,7 +78,7 @@ The application consists of:
 
 ## Services
 
-- **Web Application**: `http://localhost:8081` (main access point)
+- **Web Application**: `http://localhost:8080` (main access point)
 - **Web Application Alternative**: `http://localhost:8000` (alternative access)
 - **MySQL Database**: `localhost:3307` (external access)
 - **Redis**: `localhost:6380` (external access)

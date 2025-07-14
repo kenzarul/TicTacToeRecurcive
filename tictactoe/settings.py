@@ -11,12 +11,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = os.path.join(BASE_DIR, 'templates')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d')
+SECRET_KEY = 'laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']  # In production, specify your actual domain names
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -65,11 +65,11 @@ WSGI_APPLICATION = 'tictactoe.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DATABASE_NAME', 'tictactoe_db'),
-        'USER': os.environ.get('DATABASE_USER', 'root'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'Root23175@'),
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-        'PORT': os.environ.get('DATABASE_PORT', '3306'),
+        'NAME': 'tictactoe_db',
+        'USER': 'root',
+        'PASSWORD': 'Root23175@',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
@@ -104,10 +104,6 @@ STATICFILES_DIRS = [
 ]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Media files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -119,12 +115,6 @@ ASGI_APPLICATION = 'tictactoe.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [os.environ.get('REDIS_URL', 'redis://localhost:6379/1')],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
     }
 }
-
-
-

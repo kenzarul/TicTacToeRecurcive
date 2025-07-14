@@ -10,7 +10,7 @@
       MYSQL_USER: django_user
       MYSQL_PASSWORD: django_pass
     ports:
-      - "3307:3306"
+      - "3307:3306"  # Changed to avoid port conflict
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -21,36 +21,36 @@
     networks:
       - app_network
 
-
+  # Redis for Django Channels
   redis:
     image: redis:7-alpine
     container_name: tictactoe_redis
     restart: always
     ports:
-      - "6380:6379"
+      - "6380:6379"  # Changed to avoid port conflict
     volumes:
       - redis_data:/data
     networks:
       - app_network
 
-
+  # Django Web Application
   web:
     build: .
     container_name: tictactoe_web
     restart: always
     ports:
-      - "8000:8080"
-      - "8080:8080"
+      - "8000:8080"  # Internal 8080 mapped to external 8000
+      - "8080:8080"  # Main access on port 8080
     environment:
-
+      # Database Configuration
       DATABASE_HOST: db
       DATABASE_NAME: tictactoe_db
       DATABASE_USER: root
       DATABASE_PASSWORD: Root23175@
       DATABASE_PORT: 3306
-
+      # Redis Configuration
       REDIS_URL: redis://redis:6379/1
-
+      # Django Configuration
       DEBUG: 1
       SECRET_KEY: laa3o+vvih_=j#4*d^#)8+=7@ql1m_rj7whlaf(y6v4zam0y%d
       DJANGO_SETTINGS_MODULE: tictactoe.settings

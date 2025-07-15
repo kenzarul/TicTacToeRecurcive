@@ -166,10 +166,7 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
-        """
-        Reset the game state to its initial configuration.
-        """
-        # NEW: Update date_created so subsequent rounds are logged separately
+
         from django.utils import timezone
         self.date_created = timezone.now()
         self.board = " " * 9
@@ -227,7 +224,7 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Update also here for timer update in the duplicate play() method.
+
         if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
                                                               for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
@@ -243,7 +240,7 @@ class Game(models.Model):
                     self.winner = 'X'
                     self.save()
                     return self.winner
-        # For single player mode, do not subtract elapsed time.
+
         self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
@@ -277,7 +274,6 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
@@ -310,9 +306,7 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
-        """
-        Reset the game state to its initial configuration.
-        """
+
         # NEW: Update date_created so subsequent rounds are logged separately
         from django.utils import timezone
         self.date_created = timezone.now()
@@ -442,9 +436,6 @@ class GameHistory(models.Model):
     @database_sync_to_async
     def record_game_result(self, game, winner):
         from django.contrib.auth.models import User
-        from .models import GameHistory
-        import time
-        import random
         from django.db import transaction
         from django.utils import timezone
         from datetime import timedelta

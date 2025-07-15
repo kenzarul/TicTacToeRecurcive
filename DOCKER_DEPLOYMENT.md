@@ -28,7 +28,7 @@ The application consists of:
 1. Clone the repository:
 ```bash
 git clone https://github.com/kenzarul/TicTacToeRecurcive.git
-cd TicTacToeRecurcive-main
+cd TicTacToeRecurcive
 ```
 
 2. Start the application:
@@ -128,23 +128,7 @@ This configuration:
 ✅ **WebSocket Support**: Real-time features with Django Channels  
 ✅ **No System Check Errors**: Django runs cleanly in production mode  
 
-## Default Admin User
 
-A default superuser is created automatically:
-- **Username**: admin
-- **Password**: admin123
-- **Email**: admin@example.com
-
-## Logs
-
-View application logs:
-```bash
-docker compose logs -f web
-docker compose logs -f nginx
-docker compose logs -f db
-```
-
-## Cleanup
 
 Stop and remove all containers and volumes:
 ```bash

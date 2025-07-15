@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from .forms import NewGameForm, PlayForm
 from .models import Game
 
+
 # ======================= Main Menu Views =======================
 
 @login_required
@@ -57,12 +58,16 @@ def profile(request):
         'win_rate': stats['win_rate'],
         'sort_order': sort_order,
     })
+
+
 def main_menu(request):
     return render(request, 'game/main_menu.html')
+
 
 def main_menu_guest(request):
     logout(request)
     return render(request, 'game/main_menu.html', {'guest': True})
+
 
 # ======================= Single Player Views =======================
 
@@ -74,10 +79,12 @@ def how_to_play(request):
         # Regular request - return full page
         return render(request, 'game/how_to_play_full.html')
 
+
 def single_player(request):
     guest = request.GET.get('guest', None)
     # guest flag can be used in the template if needed
     return render(request, 'game/single_player.html', {'guest': guest})
+
 
 @require_http_methods(["GET", "POST"])
 def index(request):
@@ -119,6 +126,8 @@ def index(request):
     else:
         form = NewGameForm()
     return render(request, 'game/single_player.html', {'form': form})
+
+
 # ======================= Multiplayer Views =======================
 
 def multiplayer(request):
@@ -126,11 +135,13 @@ def multiplayer(request):
         'time_choices': range(1, 11)
     })
 
+
 def generate_unique_room_code():
     while True:
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         if not Game.objects.filter(room_code=code).exists():
             return code
+
 
 def create_multiplayer(request):
     if request.method == "POST":
@@ -158,6 +169,7 @@ def create_multiplayer(request):
 
     return redirect('game:multiplayer')
 
+
 def join_multiplayer(request):
     if request.method == "POST":
         code = request.POST.get('code', '').strip().upper()
@@ -171,6 +183,7 @@ def join_multiplayer(request):
             })
     return redirect('game:multiplayer')
 
+
 def multiplayer_game_view(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     return render(request, 'game/multi_player_board.html', {
@@ -178,6 +191,7 @@ def multiplayer_game_view(request, game_id):
         'room_code': game.room_code,
         'my_player': request.user.username if request.user.is_authenticated else "Guest"
     })
+
 
 # ======================= Classic Game View =======================
 
@@ -217,10 +231,10 @@ def game(request, pk):
                     if opponent and opponent.lower() in ['random', 'minimax', 'computer']:
                         opponent = "Computer"
                     if not GameHistory.objects.filter(
-                        user=user_obj,
-                        opponent=opponent,
-                        mode=('single' if opponent == "Computer" else 'multi'),
-                        date_played__gte=game.date_created
+                            user=user_obj,
+                            opponent=opponent,
+                            mode=('single' if opponent == "Computer" else 'multi'),
+                            date_played__gte=game.date_created
                     ).exists():
                         GameHistory.objects.create(
                             user=user_obj,
@@ -270,10 +284,10 @@ def game(request, pk):
                     if opponent and opponent.lower() in ['random', 'minimax', 'computer']:
                         opponent = "Computer"
                     if not GameHistory.objects.filter(
-                        user=user_obj,
-                        opponent=opponent,
-                        mode=('single' if opponent == "Computer" else 'multi'),
-                        date_played__gte=game.date_created
+                            user=user_obj,
+                            opponent=opponent,
+                            mode=('single' if opponent == "Computer" else 'multi'),
+                            date_played__gte=game.date_created
                     ).exists():
                         GameHistory.objects.create(
                             user=user_obj,
@@ -303,6 +317,7 @@ def game(request, pk):
     }
     return render(request, "game/single_player_board.html", context)
 
+
 # ======================= Sign Up View =======================
 
 def signup(request):
@@ -315,10 +330,12 @@ def signup(request):
             password_errors = form.errors.get('password2')
             if password_errors:
                 if any('too similar' in str(e) or 'too common' in str(e) for e in password_errors):
-                    form.add_error('password2', "⚠️ Mot de passe trop simple, veuillez choisir un mot de passe plus fort.")
+                    form.add_error('password2',
+                                   "⚠️ Mot de passe trop simple, veuillez choisir un mot de passe plus fort.")
     else:
         form = UserCreationForm()
     return render(request, 'registration/signup.html', {'form': form})
+
 
 def restart_game(request):
     room_code = request.GET.get('room_code')  # Get the room code from the request
@@ -329,8 +346,10 @@ def restart_game(request):
         pass  # Handle the case where the game does not exist
     return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page
 
+
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+
 
 @csrf_exempt
 def register_multiplayer_result(request):
@@ -341,7 +360,7 @@ def register_multiplayer_result(request):
     if request.method == "POST":
         room_code = request.POST.get("room_code")
         winner_symbol = request.POST.get("winner")  # 'X', 'O', or 'draw'
-        loser_symbol = request.POST.get("loser")    # 'X', 'O', or 'draw'
+        loser_symbol = request.POST.get("loser")  # 'X', 'O', or 'draw'
 
         try:
             game = Game.objects.get(room_code=room_code)
@@ -350,7 +369,8 @@ def register_multiplayer_result(request):
             # Get the actual player usernames based on symbols
             if winner_symbol == 'draw':
                 # Handle draw case - create records for both players
-                for player_username, opponent_username in [(game.player_x, game.player_o), (game.player_o, game.player_x)]:
+                for player_username, opponent_username in [(game.player_x, game.player_o),
+                                                           (game.player_o, game.player_x)]:
                     if not player_username:
                         continue
                     try:
@@ -393,3 +413,4 @@ def register_multiplayer_result(request):
         except Exception as e:
             return HttpResponse(f"Error: {e}", status=400)
     return HttpResponse("Invalid method", status=405)
+

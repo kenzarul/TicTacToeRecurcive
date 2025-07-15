@@ -140,6 +140,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'time_x': game_data['time_x'],
                 'time_o': game_data['time_o'],
                 'winning_line': list(winning_line) if winning_line else None,
+                'board_state': game.board,  # Send the current board state
             }
         )
 

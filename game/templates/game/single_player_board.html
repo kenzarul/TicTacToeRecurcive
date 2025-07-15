@@ -376,8 +376,8 @@
 {% endwith %}
 
 <script>
-// Global countdown for entire game (5 minutes = 300 seconds)
-let timer = 300;
+
+let timer = 60;
 let timerInterval = null;
 let currentTurn = "{{ game.next_player }}";
 {% if current_user == game.player_x %}

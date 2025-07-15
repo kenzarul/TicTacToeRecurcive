@@ -7,7 +7,7 @@ DATABASES = {
         'NAME': os.environ.get('DATABASE_NAME', 'tictactoe_db'),
         'USER': os.environ.get('DATABASE_USER', 'root'),
         'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'Root23175@'),
-        'HOST': os.environ.get('DATABASE_HOST', 'db'),
+        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
         'PORT': os.environ.get('DATABASE_PORT', '3306'),
     }
 }

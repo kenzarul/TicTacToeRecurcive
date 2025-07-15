@@ -61,21 +61,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tictactoe.wsgi.application'
 
+# Database
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'tictactoe_db',
         'USER': 'root',
         'PASSWORD': 'Root23175@',
-        'HOST': 'db',
+        'HOST': 'localhost',
         'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
-        },
     }
 }
-
 
 
 # Password validation
@@ -124,7 +120,4 @@ CHANNEL_LAYERS = {
 }
 
 
-try:
-    from .local_settings import *
-except ImportError:
-    pass
+

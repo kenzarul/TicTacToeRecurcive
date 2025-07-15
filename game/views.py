@@ -188,7 +188,9 @@ def game(request, pk):
     # --- Handle surrender for single player ---
     if request.method == "POST" and request.POST.get("surrender") == "1":
         if not game.winner:
-            user_symbol = 'X' if game.player_x == request.user.username else 'O'
+            # Use consistent username: "Guest" for non-authenticated users.
+            current_username = request.user.username if request.user.is_authenticated else "Guest"
+            user_symbol = 'X' if game.player_x == current_username else 'O'
             ai_symbol = 'O' if user_symbol == 'X' else 'X'
             game.winner = ai_symbol
             game.save()
@@ -236,7 +238,9 @@ def game(request, pk):
             sub_index = form.cleaned_data['sub_index']
 
             if not game.winner:
-                player_symbol = 'X' if game.player_x == request.user.username else 'O'
+                # Use consistent username: "Guest" for non-authenticated users.
+                current_username = request.user.username if request.user.is_authenticated else "Guest"
+                player_symbol = 'X' if game.player_x == current_username else 'O'
                 try:
                     game.play(main_index, sub_index, player_symbol)
                     game.play_auto()
@@ -294,7 +298,8 @@ def game(request, pk):
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
         'next_player': game.next_player,
-        'current_user': request.user.username if request.user.is_authenticated else '',
+        # Changed current_user default from '' to 'Guest'
+        'current_user': request.user.username if request.user.is_authenticated else 'Guest',
     }
     return render(request, "game/single_player_board.html", context)
 

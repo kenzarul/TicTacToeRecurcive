@@ -21,7 +21,7 @@ class Game(models.Model):
     last_player = models.CharField(max_length=1, null=True, blank=True)
     total_time_limit = models.IntegerField(default=600)
 
-    # Timer fields
+
     time_x = models.IntegerField(default=300)
     time_o = models.IntegerField(default=300)
     remaining_x = models.IntegerField(default=300)
@@ -46,7 +46,7 @@ class Game(models.Model):
 
     @property
     def is_game_over(self):
-        # NEW: Immediately return the winner if already set (e.g. via surrender)
+
         if self.winner:
             return self.winner
         board = list(self.board)
@@ -62,7 +62,7 @@ class Game(models.Model):
                     self.winner = 'O'
                     self.save()
                 return 'O'
-        # --- CHANGED: Detect draw if all subgames are full or won ---
+
         all_full_or_won = all(
             self.board[i] != ' ' or
             (sg := self.sub_games.filter(index=i).first()) and (' ' not in sg.board)
@@ -82,7 +82,7 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Update: Use extended AI keywords for timer updates in single player mode.
+
         if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
                                                               for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
@@ -98,7 +98,7 @@ class Game(models.Model):
                     self.winner = 'X'
                     self.save()
                     return self.winner
-        # For single player mode, do not subtract elapsed time.
+
         self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
@@ -114,7 +114,6 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        # --- CHANGED: Only use winner from tuple returned by sub_game.play ---
         winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 
@@ -133,7 +132,6 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
@@ -297,7 +295,7 @@ class Game(models.Model):
             )
         self.board = " " * 9
         self.last_player = None
-        # Initialize remaining time from time_x and time_o
+
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()
@@ -307,7 +305,6 @@ class Game(models.Model):
 
     def reset_state(self):
 
-        # NEW: Update date_created so subsequent rounds are logged separately
         from django.utils import timezone
         self.date_created = timezone.now()
         self.board = " " * 9
@@ -369,7 +366,7 @@ class SubGame(models.Model):
                 self.winner = 'O'
                 self.save()
                 return 'O'
-        # --- CHANGED: Return ' ' if board is full and no winner (draw for subgame) ---
+
         return None if ' ' in board else ' '
 
     def play(self, index, symbol):
@@ -421,14 +418,14 @@ class GameHistory(models.Model):
     date_played = models.DateTimeField(auto_now_add=True)
     duration = models.DurationField(null=True, blank=True)  # Track game duration
     moves = models.PositiveIntegerField(default=0)  # Track number of moves
-    # BEGIN CHANGES: New field to uniquely identify each multiplayer game round.
+
     game_identifier = models.CharField(max_length=50, blank=True, null=True)
-    # END CHANGES
+
 
     class Meta:
         ordering = ['-date_played']
 
-    # BEGIN CHANGES: Updated __str__ to include game_identifier if available.
+
     def __str__(self):
         gid = f" | Game {self.game_identifier}" if self.game_identifier else ""
         return f"{self.user.username}{gid} - {self.get_mode_display()} - {self.result}"
@@ -483,14 +480,14 @@ class GameHistory(models.Model):
         with transaction.atomic():
             for username, data in player_results.items():
                 opponent_username = game.player_o if username == game.player_x else game.player_x
-                # NEW: Determine mode and opponent display based on opponent string
+
                 if opponent_username and "game.players." in opponent_username.lower():
                     mode_to_set = 'single'
                     opponent_display = "Computer"
                 else:
                     mode_to_set = 'multi'
                     opponent_display = opponent_username or "Unknown"
-                # Use opponent_display in duplicate filtering
+
                 existing_records = GameHistory.objects.filter(
                     user=data["user_obj"],
                     opponent=opponent_display,  # Updated here

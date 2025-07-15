@@ -44,7 +44,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.create_subgames(game)
                 await self.start_timer_loop()
             game_data = await self.get_game_data()
-            # BEGIN CHANGES: Send "start_game" message to all group members instead of a single send.
+
             await self.channel_layer.group_send(self.group_name, {
                 'type': 'start_game',
                 'next_player': game_data['next_player'],
@@ -53,7 +53,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 'time_x': game_data['remaining_x'],
                 'time_o': game_data['remaining_o'],
             })
-            # END CHANGES
+
         else:
             await self.send(text_data=json.dumps({
                 'type': 'waiting',
@@ -67,7 +67,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.timer_task:
             self.timer_task.cancel()
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        # Removed resetting player assignment to allow re-connection for room creator.
+
 
     async def start_game(self, event):
         game_data = await self.get_game_data()
@@ -144,7 +144,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        # Replace the HTTP request approach with our direct database call
         if game_data['winner']:
             await self.record_game_result(game, game_data['winner'])
 
@@ -154,7 +153,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def handle_surrender(self, data):
         surrendering_player = data.get('player')
         winner = 'O' if surrendering_player == 'X' else 'X'
-        # --- Set the winner in the database immediately and save ---
+
         game = await self.get_game()
         if game:
             await self.set_game_winner(game, winner)
@@ -167,11 +166,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             }
         )
 
-        # Replace HTTP request with direct database call
         if game:
             await self.record_game_result(game, winner)
 
-        # Do NOT reset the game state here. Wait for replay votes.
 
     async def handle_vote(self, data):
         player = data.get('from')
@@ -198,9 +195,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             self.vote_no = {'X': False, 'O': False}
 
     async def handle_restart(self):
-        """
-        Handle the restart action by resetting the game state and notifying all players.
-        """
+
         game = await self.get_game()
         if game:
             await self.reset_full_game()  # Reset game state in the database (calls game.reset_state())
@@ -338,12 +333,10 @@ class GameConsumer(AsyncWebsocketConsumer):
             elif game.player_o == username:
                 return 'O'
         else:
-            # For anonymous users, we can use a similar check based on a session id or unique identifier.
-            # Here we simply check if either guest slot is already filled with any guest value.
-            # In a real app, you might store guest IDs in the session.
-            pass  # ...existing logic for non-authenticated users...
 
-        # Assign new player if not already assigned.
+            pass
+
+
         if not game.player_x:
             user_id = self.scope["user"].username if self.scope["user"].is_authenticated else "Guest_1"
             game.player_x = user_id
@@ -354,7 +347,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             game.player_o = user_id
             game.save()
             return 'O'
-        # If both players are already assigned, reassign if the connecting user matches an existing one.
+
         if self.scope["user"].is_authenticated:
             if game.player_x == self.scope["user"].username:
                 return 'X'
@@ -375,7 +368,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         sub_game = game.sub_games.filter(index=main_index).first()
         if not sub_game:
             raise ValueError("SubGame does not exist")
-        # Unpack winner and winning_line from sub_game.play
+
         winner, winning_line = sub_game.play(sub_index, symbol)
         game.last_main_index = main_index
         game.last_sub_index = sub_index
@@ -479,14 +472,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         with transaction.atomic():
             for username, data in player_results.items():
                 opponent_username = game.player_o if username == game.player_x else game.player_x
-                # Determine mode and opponent display based on opponent string
+
                 if opponent_username and "game.players." in opponent_username.lower():
                     mode_to_set = 'single'
                     opponent_display = "Computer"
                 else:
                     mode_to_set = 'multi'
                     opponent_display = opponent_username or "Unknown"
-                # Use opponent_display for duplicate checking
+
                 existing_records = GameHistory.objects.filter(
                     user=data["user_obj"],
                     opponent=opponent_display,  # Updated here

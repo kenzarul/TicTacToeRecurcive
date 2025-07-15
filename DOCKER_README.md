@@ -41,11 +41,6 @@ For development with auto-reload:
 # Stop the containers
 docker-compose down
 
-# Edit docker-entrypoint.sh to use runserver instead of daphne
-# Change the last line to:
-# exec python manage.py runserver 0.0.0.0:8000
-
-# Rebuild and run
 docker-compose up --build
 ```
 

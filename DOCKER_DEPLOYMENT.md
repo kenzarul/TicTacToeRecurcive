@@ -83,12 +83,6 @@ The application consists of:
 - **MySQL Database**: `localhost:3307` (external access)
 - **Redis**: `localhost:6380` (external access)
 
-## Health Checks
-
-The application includes health check endpoints:
-- `/health/` - Main health check endpoint
-- `/healthz/` - Alternative health check endpoint
-
 ## File Persistence
 
 - **Static files**: Served by Nginx from persistent volume

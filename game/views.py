@@ -25,7 +25,7 @@ def profile(request):
     else:
         history_queryset = GameHistory.objects.filter(user=request.user).order_by('-date_played')
 
-    # --- Deduplicate history with game_identifier to preserve unique games ---
+
     seen = set()
     deduped_history = []
     for game in history_queryset:
@@ -34,13 +34,13 @@ def profile(request):
             game.mode,
             game.result,
             game.date_played.strftime('%Y%m%d%H%M'),  # round to minute
-            game.game_identifier  # Include game_identifier in the key
+            game.game_identifier
         )
         if key not in seen:
             seen.add(key)
             deduped_history.append(game)
 
-    # --- Calculate stats from deduplicated history ---
+
     stats = {
         'total': len(deduped_history),
         'wins': sum(1 for g in deduped_history if g.result == 'win'),
@@ -73,23 +73,21 @@ def main_menu_guest(request):
 
 def how_to_play(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        # AJAX request - return just the content
         return render(request, 'game/how_to_play.html')
     else:
-        # Regular request - return full page
+
         return render(request, 'game/how_to_play_full.html')
 
 
 def single_player(request):
     guest = request.GET.get('guest', None)
-    # guest flag can be used in the template if needed
+
     return render(request, 'game/single_player.html', {'guest': guest})
 
 
 @require_http_methods(["GET", "POST"])
 def index(request):
     if request.method == "POST":
-        # If difficulty is provided, use it to create game (for guest and authenticated alike)
         difficulty = request.POST.get("difficulty")
         if difficulty:
             player_x = request.user.username if request.user.is_authenticated else "Guest"
@@ -106,7 +104,7 @@ def index(request):
             game.play_auto()
             game.save()
             return redirect(game)
-        # Otherwise fallback to processing the NewGameForm (if used)
+
         form = NewGameForm(request.POST)
         if form.is_valid():
             player_x = request.user.username if request.user.is_authenticated else "Guest"
@@ -199,16 +197,15 @@ def multiplayer_game_view(request, game_id):
 def game(request, pk):
     game = get_object_or_404(Game, pk=pk)
 
-    # --- Handle surrender for single player ---
     if request.method == "POST" and request.POST.get("surrender") == "1":
         if not game.winner:
-            # Use consistent username: "Guest" for non-authenticated users.
+
             current_username = request.user.username if request.user.is_authenticated else "Guest"
             user_symbol = 'X' if game.player_x == current_username else 'O'
             ai_symbol = 'O' if user_symbol == 'X' else 'X'
             game.winner = ai_symbol
             game.save()
-            # Log defeat for both players if they are authenticated and not AI
+
             from django.contrib.auth.models import User
             if request.user.is_authenticated:
                 for uname in [game.player_x, game.player_o]:
@@ -242,7 +239,7 @@ def game(request, pk):
                             mode=('single' if opponent == "Computer" else 'multi'),
                             result=result
                         )
-        # --- Redirect to detail page to show result modal ---
+
         return redirect('game:detail', pk=pk)
 
     if request.method == "POST" and not request.POST.get("surrender"):
@@ -252,7 +249,6 @@ def game(request, pk):
             sub_index = form.cleaned_data['sub_index']
 
             if not game.winner:
-                # Use consistent username: "Guest" for non-authenticated users.
                 current_username = request.user.username if request.user.is_authenticated else "Guest"
                 player_symbol = 'X' if game.player_x == current_username else 'O'
                 try:
@@ -261,7 +257,7 @@ def game(request, pk):
                 except Exception as e:
                     print("Error during move:", e)
 
-            # --- NEW: Log game history for BOTH players once game ends ---
+
             if game.winner:
                 from django.contrib.auth.models import User
                 for uname in [game.player_x, game.player_o]:
@@ -312,7 +308,6 @@ def game(request, pk):
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
         'next_player': game.next_player,
-        # Changed current_user default from '' to 'Guest'
         'current_user': request.user.username if request.user.is_authenticated else 'Guest',
     }
     return render(request, "game/single_player_board.html", context)
@@ -338,13 +333,13 @@ def signup(request):
 
 
 def restart_game(request):
-    room_code = request.GET.get('room_code')  # Get the room code from the request
+    room_code = request.GET.get('room_code')
     try:
         game = Game.objects.get(room_code=room_code)
         game.reset_state()  # Reset the game state
     except Game.DoesNotExist:
-        pass  # Handle the case where the game does not exist
-    return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page
+        pass
+    return redirect('game:multiplayer_game', game_id=game.id)
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -353,10 +348,7 @@ from django.http import HttpResponse
 
 @csrf_exempt
 def register_multiplayer_result(request):
-    """
-    API endpoint to register a multiplayer result (e.g., on surrender).
-    Expects POST with room_code, winner, loser.
-    """
+
     if request.method == "POST":
         room_code = request.POST.get("room_code")
         winner_symbol = request.POST.get("winner")  # 'X', 'O', or 'draw'
@@ -368,7 +360,7 @@ def register_multiplayer_result(request):
 
             # Get the actual player usernames based on symbols
             if winner_symbol == 'draw':
-                # Handle draw case - create records for both players
+
                 for player_username, opponent_username in [(game.player_x, game.player_o),
                                                            (game.player_o, game.player_x)]:
                     if not player_username:

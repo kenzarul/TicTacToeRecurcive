@@ -27,6 +27,19 @@ The application consists of:
 
 1. Clone the repository:
 ```bash
+sudo apt update
+sudo apt install ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo service docker start
+
 git clone https://github.com/kenzarul/TicTacToeRecurcive.git
 cd TicTacToeRecurcive-main
 ```
@@ -72,7 +85,6 @@ docker compose -f docker-compose.validate.yml up -d
 The application consists of:
 
 - **Django Web Application**: Runs on port 8080 internally, served by Daphne ASGI server
-- **WhiteNoise Middleware**: Efficiently serves static and media files  
 - **MySQL Database**: Persistent data storage  
 - **Redis**: Cache and WebSocket support for Django Channels
 
@@ -115,34 +127,6 @@ This configuration:
 - Includes all security headers via WhiteNoise
 - Enhanced validation with deployment checks
 
-## Features
-
-✅ **Port 8080**: Application accessible on port 8080 (also available on 8000)  
-✅ **Two-command deployment**: `git clone` + `docker compose up -d`  
-✅ **No runserver**: Uses Daphne ASGI server for production  
-✅ **MySQL Database**: Production-ready database (not SQLite)  
-✅ **Static/Media Files**: Efficiently served by WhiteNoise middleware  
-✅ **Automatic Migrations**: Applied automatically on startup  
-✅ **Health Checks**: Available at `/health/` and `/healthz/`  
-✅ **Media Persistence**: Files persist across container restarts  
-✅ **WebSocket Support**: Real-time features with Django Channels  
-✅ **No System Check Errors**: Django runs cleanly in production mode  
-
-## Default Admin User
-
-A default superuser is created automatically:
-- **Username**: admin
-- **Password**: admin123
-- **Email**: admin@example.com
-
-## Logs
-
-View application logs:
-```bash
-docker compose logs -f web
-docker compose logs -f nginx
-docker compose logs -f db
-```
 
 ## Cleanup
 

@@ -92,7 +92,9 @@ SECRET_KEY=votre_cle_secrete
 ```
 5. Lancer le serveur Django
 ```
-python manage.py runserver
+daphne tictactoe.asgi:application --port 8000
+```
+   - Ou pour le mode de développement :
 ```
 6. Ouvrir le projet dans votre navigateur
 Accédez à `localhost:8000`.

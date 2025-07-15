@@ -5,14 +5,9 @@ from django.contrib.auth.forms import UserCreationForm
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Game, GameHistory
-from django.db.models import Q
-from django.utils import timezone
-
-from django.http import JsonResponse
-
+from .models import GameHistory, Game
 from .forms import NewGameForm, PlayForm
-from .models import Game
+
 
 
 # ======================= Main Menu Views =======================
@@ -73,16 +68,15 @@ def main_menu_guest(request):
 
 def how_to_play(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        # AJAX request - return just the content
         return render(request, 'game/how_to_play.html')
     else:
-        # Regular request - return full page
+
         return render(request, 'game/how_to_play_full.html')
 
 
 def single_player(request):
     guest = request.GET.get('guest', None)
-    # guest flag can be used in the template if needed
+
     return render(request, 'game/single_player.html', {'guest': guest})
 
 
@@ -95,7 +89,7 @@ def index(request):
             player_x = request.user.username if request.user.is_authenticated else "Guest"
             game = Game.objects.create(
                 player_x=player_x,
-                player_o=difficulty,  # Use selected difficulty e.g. 'random' or 'minimax'
+                player_o=difficulty,
                 board=" " * 9,
                 time_x=300,
                 time_o=300,
@@ -199,16 +193,15 @@ def multiplayer_game_view(request, game_id):
 def game(request, pk):
     game = get_object_or_404(Game, pk=pk)
 
-    # --- Handle surrender for single player ---
     if request.method == "POST" and request.POST.get("surrender") == "1":
         if not game.winner:
-            # Use consistent username: "Guest" for non-authenticated users.
+
             current_username = request.user.username if request.user.is_authenticated else "Guest"
             user_symbol = 'X' if game.player_x == current_username else 'O'
             ai_symbol = 'O' if user_symbol == 'X' else 'X'
             game.winner = ai_symbol
             game.save()
-            # Log defeat for both players if they are authenticated and not AI
+
             from django.contrib.auth.models import User
             if request.user.is_authenticated:
                 for uname in [game.player_x, game.player_o]:
@@ -242,7 +235,6 @@ def game(request, pk):
                             mode=('single' if opponent == "Computer" else 'multi'),
                             result=result
                         )
-        # --- Redirect to detail page to show result modal ---
         return redirect('game:detail', pk=pk)
 
     if request.method == "POST" and not request.POST.get("surrender"):
@@ -252,7 +244,6 @@ def game(request, pk):
             sub_index = form.cleaned_data['sub_index']
 
             if not game.winner:
-                # Use consistent username: "Guest" for non-authenticated users.
                 current_username = request.user.username if request.user.is_authenticated else "Guest"
                 player_symbol = 'X' if game.player_x == current_username else 'O'
                 try:
@@ -261,7 +252,6 @@ def game(request, pk):
                 except Exception as e:
                     print("Error during move:", e)
 
-            # --- NEW: Log game history for BOTH players once game ends ---
             if game.winner:
                 from django.contrib.auth.models import User
                 for uname in [game.player_x, game.player_o]:
@@ -312,7 +302,6 @@ def game(request, pk):
         'sub_game_7': game.sub_games.filter(index=7).first(),
         'sub_game_8': game.sub_games.filter(index=8).first(),
         'next_player': game.next_player,
-        # Changed current_user default from '' to 'Guest'
         'current_user': request.user.username if request.user.is_authenticated else 'Guest',
     }
     return render(request, "game/single_player_board.html", context)
@@ -343,8 +332,8 @@ def restart_game(request):
         game = Game.objects.get(room_code=room_code)
         game.reset_state()  # Reset the game state
     except Game.DoesNotExist:
-        pass  # Handle the case where the game does not exist
-    return redirect('game:multiplayer_game', game_id=game.id)  # Redirect to the multiplayer game page
+        pass
+    return redirect('game:multiplayer_game', game_id=game.id)
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -353,10 +342,7 @@ from django.http import HttpResponse
 
 @csrf_exempt
 def register_multiplayer_result(request):
-    """
-    API endpoint to register a multiplayer result (e.g., on surrender).
-    Expects POST with room_code, winner, loser.
-    """
+
     if request.method == "POST":
         room_code = request.POST.get("room_code")
         winner_symbol = request.POST.get("winner")  # 'X', 'O', or 'draw'
@@ -366,9 +352,8 @@ def register_multiplayer_result(request):
             game = Game.objects.get(room_code=room_code)
             from django.contrib.auth.models import User
 
-            # Get the actual player usernames based on symbols
+
             if winner_symbol == 'draw':
-                # Handle draw case - create records for both players
                 for player_username, opponent_username in [(game.player_x, game.player_o),
                                                            (game.player_o, game.player_x)]:
                     if not player_username:
@@ -385,8 +370,7 @@ def register_multiplayer_result(request):
                     except User.DoesNotExist:
                         continue
             else:
-                # Handle win/loss case
-                # Map symbols to actual usernames
+
                 winner_username = game.player_x if winner_symbol == 'X' else game.player_o
                 loser_username = game.player_o if winner_symbol == 'X' else game.player_x
 

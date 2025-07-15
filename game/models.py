@@ -2,10 +2,12 @@ import random
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.db import models, transaction
-from django.utils import timezone
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
-
+from django.contrib.auth.models import User
+from .models import GameHistory
+from django.utils import timezone
+from datetime import timedelta
 
 class Game(models.Model):
     room_code = models.CharField(max_length=6, unique=True, null=True, blank=True)
@@ -82,7 +84,6 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Update: Use extended AI keywords for timer updates in single player mode.
         if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
                                                               for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
@@ -133,7 +134,7 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
+
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
@@ -166,9 +167,7 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
-        """
-        Reset the game state to its initial configuration.
-        """
+
         # NEW: Update date_created so subsequent rounds are logged separately
         from django.utils import timezone
         self.date_created = timezone.now()
@@ -197,11 +196,6 @@ class Game(models.Model):
             next_symbol = self.next_player
             player = self.player_x if next_symbol == 'X' else self.player_o
 
-            # Update: Allow AI move if player string contains known AI keywords.
-            if player and not any(keyword in player.lower()
-                                for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax']):
-                return
-
             from game.players import get_player
             try:
                 player_obj = get_player(player)
@@ -227,7 +221,6 @@ class Game(models.Model):
             symbol = self.next_player
 
         now = timezone.now()
-        # Update also here for timer update in the duplicate play() method.
         if self.last_move_time and not (self.player_o and any(keyword in self.player_o.lower()
                                                               for keyword in ['randomplayer','goodplayer','legendplayer','computer','minimax'])):
             elapsed = int((now - self.last_move_time).total_seconds())
@@ -243,7 +236,7 @@ class Game(models.Model):
                     self.winner = 'X'
                     self.save()
                     return self.winner
-        # For single player mode, do not subtract elapsed time.
+
         self.last_move_time = now
 
         if self.active_index is not None and main_index != self.active_index:
@@ -277,7 +270,7 @@ class Game(models.Model):
         return winner
 
     def set_active_index(self, index):
-        # If the intended next board is already won or full, allow any board
+
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
@@ -310,11 +303,7 @@ class Game(models.Model):
         self.save()
 
     def reset_state(self):
-        """
-        Reset the game state to its initial configuration.
-        """
-        # NEW: Update date_created so subsequent rounds are logged separately
-        from django.utils import timezone
+
         self.date_created = timezone.now()
         self.board = " " * 9
         self.last_main_index = None
@@ -375,7 +364,7 @@ class SubGame(models.Model):
                 self.winner = 'O'
                 self.save()
                 return 'O'
-        # --- CHANGED: Return ' ' if board is full and no winner (draw for subgame) ---
+
         return None if ' ' in board else ' '
 
     def play(self, index, symbol):
@@ -427,29 +416,21 @@ class GameHistory(models.Model):
     date_played = models.DateTimeField(auto_now_add=True)
     duration = models.DurationField(null=True, blank=True)  # Track game duration
     moves = models.PositiveIntegerField(default=0)  # Track number of moves
-    # BEGIN CHANGES: New field to uniquely identify each multiplayer game round.
+
     game_identifier = models.CharField(max_length=50, blank=True, null=True)
-    # END CHANGES
+
 
     class Meta:
         ordering = ['-date_played']
 
-    # BEGIN CHANGES: Updated __str__ to include game_identifier if available.
+
     def __str__(self):
         gid = f" | Game {self.game_identifier}" if self.game_identifier else ""
         return f"{self.user.username}{gid} - {self.get_mode_display()} - {self.result}"
 
     @database_sync_to_async
     def record_game_result(self, game, winner):
-        from django.contrib.auth.models import User
-        from .models import GameHistory
-        import time
-        import random
-        from django.db import transaction
-        from django.utils import timezone
-        from datetime import timedelta
 
-        # Try to get both user objects
         player_x_obj = None
         player_o_obj = None
 
@@ -492,7 +473,7 @@ class GameHistory(models.Model):
         with transaction.atomic():
             for username, data in player_results.items():
                 opponent_username = game.player_o if username == game.player_x else game.player_x
-                # NEW: Determine mode and opponent display based on opponent string
+
                 if opponent_username and "game.players." in opponent_username.lower():
                     mode_to_set = 'single'
                     opponent_display = "Computer"

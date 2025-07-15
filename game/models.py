@@ -64,7 +64,6 @@ class Game(models.Model):
                     self.winner = 'O'
                     self.save()
                 return 'O'
-        # --- CHANGED: Detect draw if all subgames are full or won ---
         all_full_or_won = all(
             self.board[i] != ' ' or
             (sg := self.sub_games.filter(index=i).first()) and (' ' not in sg.board)
@@ -115,7 +114,6 @@ class Game(models.Model):
         if sub_game.is_game_over or ' ' not in sub_game.board:
             raise ValidationError("This sub-board is full or already won")
 
-        # --- CHANGED: Only use winner from tuple returned by sub_game.play ---
         winner, _ = sub_game.play(sub_index, symbol)
         sub_game.save()
 
@@ -138,7 +136,6 @@ class Game(models.Model):
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
-            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None
@@ -158,7 +155,6 @@ class Game(models.Model):
             )
         self.board = " " * 9
         self.last_player = None
-        # Initialize remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()
@@ -168,7 +164,6 @@ class Game(models.Model):
 
     def reset_state(self):
 
-        # NEW: Update date_created so subsequent rounds are logged separately
         from django.utils import timezone
         self.date_created = timezone.now()
         self.board = " " * 9
@@ -274,7 +269,6 @@ class Game(models.Model):
         if index is None or self.board[index] != ' ':
             self.active_index = None
         else:
-            # Check if the subgame is full (draw)
             sub_game = self.sub_games.filter(index=index).first()
             if not sub_game or sub_game.is_game_over or ' ' not in sub_game.board:
                 self.active_index = None
@@ -294,7 +288,6 @@ class Game(models.Model):
             )
         self.board = " " * 9
         self.last_player = None
-        # Initialize remaining time from time_x and time_o
         self.remaining_x = self.time_x
         self.remaining_o = self.time_o
         self.last_move_time = timezone.now()

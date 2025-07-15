@@ -420,14 +420,12 @@ document.addEventListener('DOMContentLoaded', function() {
     startSinglePlayerTimer();  // Called once when page loads
 });
 
-// In showResultModal, ensure lost result shows "💀 You Lose! 💀"
 function showResultModal(result, msg) {
     const modal = document.getElementById('gameResultModal');
     const title = document.getElementById('resultTitle');
     const message = document.getElementById('resultMessage');
     const confettiContainer = document.querySelector('.confetti-container');
 
-    // Clear any previous confetti
     confettiContainer.innerHTML = '';
 
     if (result === "draw") {
@@ -436,7 +434,6 @@ function showResultModal(result, msg) {
     } else if (result === "X" || result === "O") {
         if (result === humanSymbol) {
             title.textContent = '🎉 You Win! 🎉';
-            // Create confetti for win!
             createConfetti();
             playConfettiSound();
         } else {
@@ -453,7 +450,6 @@ function showResultModal(result, msg) {
     document.querySelector('.modal-content').classList.add('slide-down');
 }
 
-// Add confetti creation function
 function createConfetti() {
     const confettiContainer = document.querySelector('.confetti-container');
     const colors = ['#FFC107', '#FF5252', '#4CAF50', '#2196F3', '#9C27B0', '#3F51B5'];
@@ -466,7 +462,6 @@ function createConfetti() {
         confetti.style.animationDelay = Math.random() * 1 + 's';
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
 
-        // Random shapes
         if (Math.random() > 0.5) {
             confetti.style.borderRadius = '0';
             confetti.style.width = (Math.random() * 6 + 4) + 'px';
